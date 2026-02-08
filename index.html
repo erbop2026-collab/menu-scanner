@@ -319,7 +319,7 @@
             <p>Scan menu sheets and auto-update Google Sheets</p>
         </div>
 
-        <div class="card setup-instructions" id="setupInstructions">
+        <div class="card setup-instructions" id="setupInstructions" style="display: none;">
             <h3>⚙️ Setup Required</h3>
             <p style="margin-bottom: 15px; color: #856404;">Follow these steps to connect to your Google Sheet:</p>
             <ol>
@@ -335,11 +335,11 @@
             </ol>
         </div>
 
-        <div class="card">
+        <div class="card" id="apiUrlCard" style="display: none;">
             <div class="form-group">
                 <label>Google Sheets Web App URL</label>
-                <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/...../exec">
-                <button onclick="saveApiUrl()" style="margin-top: 10px;">💾 Save URL</button>
+                <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/...../exec" readonly>
+                <p style="margin-top: 10px; color: #666; font-size: 14px;">✅ Connected to your Google Sheet</p>
             </div>
         </div>
 
@@ -437,13 +437,17 @@
         // Set PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        // Hardcoded Google Sheets API URL - no need to configure!
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxJ5DfgjmyHYFfR63exCvqMTLQNGn4BvCc4sAHRGJHppY6q6JgU9Tq_QnYvRygGu2Yc/exec';
+
         // Load saved API URL
         window.onload = function() {
-            const savedUrl = localStorage.getItem('apiUrl');
-            if (savedUrl) {
-                document.getElementById('apiUrl').value = savedUrl;
-                document.getElementById('setupInstructions').style.display = 'none';
-            }
+            // Auto-fill the URL field
+            document.getElementById('apiUrl').value = GOOGLE_SHEETS_URL;
+            localStorage.setItem('apiUrl', GOOGLE_SHEETS_URL);
+            
+            // Hide setup instructions since URL is pre-configured
+            document.getElementById('setupInstructions').style.display = 'none';
             
             // Set today's date as default
             document.getElementById('eventDate').valueAsDate = new Date();
@@ -699,11 +703,7 @@ If you cannot read certain fields clearly, use empty strings or best guess.`
         }
 
         async function saveToSheets() {
-            const apiUrl = localStorage.getItem('apiUrl');
-            if (!apiUrl) {
-                showError('Please set up Google Sheets URL first');
-                return;
-            }
+            const apiUrl = GOOGLE_SHEETS_URL;
 
             hideMessages();
             
