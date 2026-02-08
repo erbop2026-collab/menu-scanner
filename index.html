@@ -810,48 +810,82 @@
             const eventInfo = {
                 date: '',
                 eventType: '',
-                hallName: '',
+                hallName: 'Ateres Golda', // Default hall name
                 eventSize: '',
                 eventOwner: ''
             };
             
-            // Extract header information
-            for (let i = 0; i < Math.min(15, lines.length); i++) {
+            // Extract header information - look more carefully
+            for (let i = 0; i < Math.min(20, lines.length); i++) {
                 const line = lines[i];
+                const lowerLine = line.toLowerCase();
                 
-                // Look for Affair
-                if (line.includes('Affair') || (line.match(/^[A-Z][a-z]+$/) && line.length < 15)) {
-                    const nextLine = lines[i + 1] || '';
-                    if (nextLine && !nextLine.includes('/') && nextLine.length < 20) {
-                        eventInfo.eventType = nextLine;
+                // Look for Event Date - more flexible patterns
+                if (lowerLine.includes('event date') || lowerLine.includes('date')) {
+                    // Check next line or same line
+                    const dateMatch = line.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
+                    if (dateMatch) {
+                        eventInfo.date = convertToISODate(dateMatch[0]);
+                    } else if (i + 1 < lines.length) {
+                        const nextDateMatch = lines[i + 1].match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
+                        if (nextDateMatch) {
+                            eventInfo.date = convertToISODate(nextDateMatch[0]);
+                        }
                     }
                 }
                 
-                // Look for Event Date
-                const dateMatch = line.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
-                if (dateMatch) {
-                    eventInfo.date = convertToISODate(dateMatch[0]);
-                }
-                
-                // Look for Ball Room
-                if (line.includes('Ball Room') || line.includes('Room')) {
-                    const nextLine = lines[i + 1] || '';
-                    if (nextLine && nextLine.length < 20) {
-                        eventInfo.hallName = nextLine;
+                // Look for Affair/Event Type
+                if (lowerLine.includes('affair')) {
+                    // Check same line first
+                    const words = line.split(/\s+/);
+                    const affairIndex = words.findIndex(w => w.toLowerCase().includes('affair'));
+                    if (affairIndex >= 0 && affairIndex + 1 < words.length) {
+                        const possibleType = words[affairIndex + 1];
+                        if (possibleType && possibleType.length > 2 && !possibleType.match(/\d/)) {
+                            eventInfo.eventType = possibleType;
+                        }
+                    }
+                    
+                    // Also check next line
+                    if (!eventInfo.eventType && i + 1 < lines.length) {
+                        const nextLine = lines[i + 1];
+                        if (nextLine.length < 20 && !nextLine.match(/\d{2,}/) && nextLine.match(/^[A-Z][a-z]+$/)) {
+                            eventInfo.eventType = nextLine;
+                        }
                     }
                 }
                 
                 // Look for Party Names
-                if (line.includes('Party Names') || line.includes('Names')) {
-                    const nextLine = lines[i + 1] || '';
-                    if (nextLine && nextLine.length < 30) {
-                        eventInfo.eventOwner = nextLine;
+                if (lowerLine.includes('party') && lowerLine.includes('name')) {
+                    // Check same line
+                    const namePart = line.split(/party\s*names?/i)[1];
+                    if (namePart && namePart.trim().length > 0 && namePart.trim().length < 30) {
+                        eventInfo.eventOwner = namePart.trim();
+                    }
+                    
+                    // Also check next line
+                    if (!eventInfo.eventOwner && i + 1 < lines.length) {
+                        const nextLine = lines[i + 1];
+                        if (nextLine.length < 30 && !nextLine.match(/\d{2,}/) && nextLine.match(/^[A-Z]/)) {
+                            eventInfo.eventOwner = nextLine;
+                        }
                     }
                 }
                 
-                // Look for guest count (often a standalone number)
+                // Look for guest count - standalone numbers
                 if (line.match(/^\d{1,3}$/)) {
-                    eventInfo.eventSize = line;
+                    const num = parseInt(line);
+                    if (num >= 10 && num <= 999) {
+                        eventInfo.eventSize = line;
+                    }
+                }
+                
+                // Also look for patterns like "25-30 People"
+                if (lowerLine.match(/\d{1,3}[\s\-]*\d{0,3}\s*people/)) {
+                    const sizeMatch = line.match(/(\d{1,3}[\s\-]*\d{0,3})/);
+                    if (sizeMatch) {
+                        eventInfo.eventSize = sizeMatch[0].replace(/\s/g, '');
+                    }
                 }
             }
             
@@ -863,19 +897,19 @@
                 const line = lines[i];
                 
                 // Detect categories
-                if (line.match(/FRIDAY NIGHT|KIDDISH|MEN|LADIES|KAYX|INDEVIDUAL|MENU/i)) {
+                if (line.match(/FRIDAY NIGHT|KIDDISH|MEN[\s\-]|LADIES[\s\-]|KAYX|INDEVIDUAL|MENU/i)) {
                     currentCategory = line;
                     continue;
                 }
                 
-                // Skip very short lines or numbers
+                // Skip very short lines or pure numbers
                 if (line.length < 3 || line.match(/^\d+$/)) {
                     continue;
                 }
                 
                 // Detect checkbox indicators
-                const hasCheckMark = line.includes('☑') || line.includes('✓') || line.includes('✔');
-                const hasCrossMark = line.includes('☒') || line.includes('✗') || line.includes('✘');
+                const hasCheckMark = line.includes('☑') || line.includes('✓') || line.includes('✔') || line.includes('V');
+                const hasCrossMark = line.includes('☒') || line.includes('✗') || line.includes('✘') || line.includes('X');
                 
                 // Extract dish name and amount
                 let dishName = line
@@ -883,9 +917,9 @@
                     .replace(/^\s*[-•*]\s*/, '')
                     .trim();
                 
-                // Look for number in box (amount remained)
+                // Look for number in box (amount remained) - at end of line
                 let amountRemained = '';
-                const amountMatch = line.match(/\b(\d+)\s*$/);
+                const amountMatch = line.match(/(\d+)\s*$/);
                 if (amountMatch) {
                     amountRemained = amountMatch[1];
                     dishName = dishName.replace(amountMatch[0], '').trim();
