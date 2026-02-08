@@ -292,6 +292,148 @@
             border-left: 4px solid #ffc107;
             padding-left: 15px;
         }
+
+        .settings-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #667eea;
+        }
+
+        .close-btn {
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: auto;
+            margin: 0;
+        }
+
+        .close-btn:hover {
+            color: #333;
+            transform: none;
+        }
+
+        .ignore-list {
+            margin-top: 20px;
+        }
+
+        .ignore-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .ignore-item span {
+            flex: 1;
+            color: #333;
+        }
+
+        .ignore-item button {
+            width: auto;
+            padding: 5px 15px;
+            margin: 0;
+            font-size: 14px;
+            background: #f44336;
+        }
+
+        .add-ignore-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 8px;
+        }
+
+        .add-ignore-section input {
+            width: calc(100% - 120px);
+            padding: 10px;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .add-ignore-section button {
+            width: 100px;
+            padding: 10px;
+            background: #4caf50;
+            margin: 0;
+        }
+
+        .section-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: #1565c0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -353,12 +495,39 @@
                 <div class="row">
                     <div class="form-group">
                         <label>Event Type (Affair)</label>
-                        <input type="text" id="eventType" placeholder="e.g., Aufruf, Wedding">
+                        <select id="eventType">
+                            <option value="">Select type...</option>
+                            <option value="Wedding">Wedding (חתונה)</option>
+                            <option value="Bar Mitzvah">Bar Mitzvah (בר מצווה)</option>
+                            <option value="Sheva Brachot">Sheva Brachot (שבע ברכות)</option>
+                            <option value="Vort">Vort (וורט)</option>
+                            <option value="Shabbat">Shabbat (שבת)</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label>Hall/Ball Room</label>
-                        <input type="text" id="hallName" placeholder="Ball room name">
+                        <label>Hall Name</label>
+                        <select id="hallName">
+                            <option value="">Select hall...</option>
+                            <option value="Ateres Golda">Ateres Golda (עטרת גולדה)</option>
+                            <option value="Scharf">Scharf (שארף)</option>
+                            <option value="LH">LH</option>
+                        </select>
                     </div>
+                </div>
+
+                <div class="form-group" id="hallSideGroup" style="display: none;">
+                    <label>Hall Side (for split events)</label>
+                    <select id="hallSide">
+                        <option value="">Full Hall</option>
+                        <option value="Side A">Side A</option>
+                        <option value="Side B">Side B</option>
+                        <option value="North">North</option>
+                        <option value="South">South</option>
+                    </select>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        💡 Select side if hall is split for multiple events
+                    </p>
                 </div>
 
                 <div class="row">
@@ -380,14 +549,187 @@
         </div>
     </div>
 
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+            </div>
+
+            <div class="info-box">
+                <p><strong>💡 Ignore List:</strong> Items in this list will be automatically filtered out during scanning.</p>
+                <p>Common items to ignore: decorations, serving items, tax, headers</p>
+            </div>
+
+            <div class="section-title">📋 Current Ignore List:</div>
+            <div id="ignoreList" class="ignore-list"></div>
+
+            <div class="add-ignore-section">
+                <div class="section-title">➕ Add New Item to Ignore:</div>
+                <div style="display: flex; align-items: center; margin-top: 10px;">
+                    <input type="text" id="newIgnoreItem" placeholder="e.g., Sales Tax, Decor, Tablecloth..." onkeypress="if(event.key==='Enter') addIgnoreItem()">
+                    <button onclick="addIgnoreItem()">Add</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button onclick="resetIgnoreList()" style="background: #ff9800;">🔄 Reset to Default</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         let extractedData = null;
         let imageFile = null;
         const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxJ5DfgjmyHYFfR63exCvqMTLQNGn4BvCc4sAHRGJHppY6q6JgU9Tq_QnYvRygGu2Yc/exec';
 
+        // Default ignore list - common items that aren't food
+        const DEFAULT_IGNORE_LIST = [
+            // Decorations
+            'decor',
+            'tablecloth',
+            'linen',
+            'flowers',
+            'centerpiece',
+            'burgundy look',
+            'olive green look',
+            'laser cut',
+            'new green bird',
+            'burgundy liner',
+            
+            // Serving items
+            'platters',
+            'cake platters',
+            'cut up cake',
+            'glasses',
+            'martini glasses',
+            'flute glasses',
+            'plates',
+            'napkins',
+            'utensils',
+            'on tables',
+            
+            // Headers/Categories (will be kept as section headers but not as menu items)
+            'friday night',
+            'men-',
+            'ladies-',
+            'kayx',
+            'some kids',
+            'people',
+            
+            // Other
+            'sales tax',
+            'tax'
+        ];
+
+        // Load ignore list from localStorage or use default
+        let ignoreList = JSON.parse(localStorage.getItem('ignoreList')) || DEFAULT_IGNORE_LIST;
+
+        function saveIgnoreList() {
+            localStorage.setItem('ignoreList', JSON.stringify(ignoreList));
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            displayIgnoreList();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function displayIgnoreList() {
+            const container = document.getElementById('ignoreList');
+            container.innerHTML = '';
+            
+            if (ignoreList.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No items in ignore list</p>';
+                return;
+            }
+            
+            ignoreList.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'ignore-item';
+                div.innerHTML = `
+                    <span>${item}</span>
+                    <button onclick="removeIgnoreItem(${index})">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addIgnoreItem() {
+            const input = document.getElementById('newIgnoreItem');
+            const item = input.value.trim().toLowerCase();
+            
+            if (!item) {
+                alert('Please enter an item to ignore');
+                return;
+            }
+            
+            if (ignoreList.includes(item)) {
+                alert('This item is already in the ignore list');
+                return;
+            }
+            
+            ignoreList.push(item);
+            saveIgnoreList();
+            displayIgnoreList();
+            input.value = '';
+            
+            showSuccess('Item added to ignore list!');
+        }
+
+        function removeIgnoreItem(index) {
+            if (confirm('Remove "' + ignoreList[index] + '" from ignore list?')) {
+                ignoreList.splice(index, 1);
+                saveIgnoreList();
+                displayIgnoreList();
+                showSuccess('Item removed from ignore list!');
+            }
+        }
+
+        function resetIgnoreList() {
+            if (confirm('Reset ignore list to default? This will remove all custom items.')) {
+                ignoreList = [...DEFAULT_IGNORE_LIST];
+                saveIgnoreList();
+                displayIgnoreList();
+                showSuccess('Ignore list reset to default!');
+            }
+        }
+
+        function shouldIgnoreItem(dishName) {
+            const name = dishName.toLowerCase();
+            
+            // Check if the dish name contains any ignored keyword
+            for (let keyword of ignoreList) {
+                if (name.includes(keyword)) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
         window.onload = function() {
             document.getElementById('eventDate').valueAsDate = new Date();
+            
+            // Show/hide hall side selector based on event type
+            document.getElementById('eventType').addEventListener('change', function() {
+                var eventType = this.value;
+                var hallSideGroup = document.getElementById('hallSideGroup');
+                
+                // Show hall side option for Shabbat events
+                if (eventType === 'Shabbat') {
+                    hallSideGroup.style.display = 'block';
+                } else {
+                    hallSideGroup.style.display = 'none';
+                    document.getElementById('hallSide').value = '';
+                }
+            });
         };
 
         const cameraInput = document.getElementById('cameraInput');
@@ -549,9 +891,10 @@
                     dishName = dishName.replace(amountMatch[0], '').trim();
                 }
                 
-                // Only add if it looks like a dish name
+                // Only add if it looks like a dish name AND not in ignore list
                 if (dishName.length > 3 && 
-                    !dishName.match(/^(Ateres|Golda|Menu|Affair|Event|Ball|Room|Party|Names|Date|Additional|Information|Qty)$/i)) {
+                    !dishName.match(/^(Ateres|Golda|Menu|Affair|Event|Ball|Room|Party|Names|Date|Additional|Information|Qty)$/i) &&
+                    !shouldIgnoreItem(dishName)) {
                     
                     let status = 'Unknown';
                     if (hasCheckMark) status = 'Remained';
@@ -591,8 +934,22 @@
             const eventInfo = extractedData.eventInfo;
             
             document.getElementById('eventDate').value = eventInfo.date || '';
-            document.getElementById('eventType').value = eventInfo.eventType || '';
-            document.getElementById('hallName').value = eventInfo.hallName || '';
+            
+            // Set dropdown values if detected
+            var eventTypeSelect = document.getElementById('eventType');
+            if (eventInfo.eventType) {
+                var typeValue = normalizeEventTypeForDropdown(eventInfo.eventType);
+                eventTypeSelect.value = typeValue;
+                // Trigger change event to show hall side if needed
+                eventTypeSelect.dispatchEvent(new Event('change'));
+            }
+            
+            var hallNameSelect = document.getElementById('hallName');
+            if (eventInfo.hallName) {
+                var hallValue = normalizeHallNameForDropdown(eventInfo.hallName);
+                hallNameSelect.value = hallValue;
+            }
+            
             document.getElementById('eventSize').value = eventInfo.eventSize || '';
             document.getElementById('eventOwner').value = eventInfo.eventOwner || '';
 
@@ -652,13 +1009,40 @@
             document.getElementById('results').style.display = 'block';
         }
 
+        function normalizeEventTypeForDropdown(type) {
+            var t = (type || '').toLowerCase();
+            if (t.includes('wedding') || t.includes('חתונה')) return 'Wedding';
+            if (t.includes('bar') || t.includes('בר מצווה')) return 'Bar Mitzvah';
+            if (t.includes('sheva') || t.includes('שבע ברכות')) return 'Sheva Brachot';
+            if (t.includes('vort') || t.includes('וורט')) return 'Vort';
+            if (t.includes('shabbat') || t.includes('שבת')) return 'Shabbat';
+            return '';
+        }
+
+        function normalizeHallNameForDropdown(hall) {
+            var h = (hall || '').toLowerCase();
+            if (h.includes('ateres') || h.includes('golda') || h.includes('עטרת')) return 'Ateres Golda';
+            if (h.includes('scharf') || h.includes('שארף')) return 'Scharf';
+            if (h.includes('lh')) return 'LH';
+            return '';
+        }
+
         async function saveToSheets() {
             hideMessages();
+            
+            var hallName = document.getElementById('hallName').value;
+            var hallSide = document.getElementById('hallSide').value;
+            
+            // Combine hall name with side if specified
+            var fullHallName = hallName;
+            if (hallSide) {
+                fullHallName = hallName + ' - ' + hallSide;
+            }
             
             const eventData = {
                 date: document.getElementById('eventDate').value,
                 eventType: document.getElementById('eventType').value,
-                hallName: document.getElementById('hallName').value,
+                hallName: fullHallName,
                 eventSize: document.getElementById('eventSize').value,
                 eventOwner: document.getElementById('eventOwner').value
             };
