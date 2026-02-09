@@ -93,7 +93,7 @@
             font-family: 'Playfair Display', serif;
             font-size: 20px; font-weight: 600; color: var(--primary); margin-bottom: 18px;
         }
-        .upload-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .upload-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
         .upload-btn {
             display: block; padding: 28px 16px;
             background: var(--bg); border: 2px dashed var(--border);
@@ -207,6 +207,11 @@
             .container { padding: 12px 10px 100px; }
             .card { padding: 18px; }
             .form-grid { grid-template-columns: 1fr; }
+            .upload-actions { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+            .upload-btn { padding: 20px 8px; }
+            .upload-btn-icon { font-size: 26px; }
+            .upload-btn-label { font-size: 12px; }
+            .upload-btn-hint { font-size: 10px; }
         }
     </style>
 </head>
@@ -221,7 +226,7 @@
         </div>
     </div>
     <div class="top-bar-actions">
-        <a href="https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc" target="_blank" rel="noopener" class="icon-btn">📊 View Sheet</a>
+        <a href="https://docs.google.com/spreadsheets/d/1kEwBmSSFf09rOy782nLSJVtT5vboLwXrBT1XpFxkP9w" target="_blank" rel="noopener" class="icon-btn">📊 View Sheet</a>
         <button type="button" class="icon-btn round" onclick="openSettings()">⚙</button>
     </div>
 </div>
@@ -245,6 +250,11 @@
                 <div class="upload-btn-hint">From gallery</div>
                 <input type="file" accept="image/*" style="display:none" onchange="handleFile(this.files[0])">
             </label>
+            <div class="upload-btn" onclick="openGoogleDrivePicker()">
+                <span class="upload-btn-icon">📁</span>
+                <div class="upload-btn-label">Google Drive</div>
+                <div class="upload-btn-hint">Select from Drive</div>
+            </div>
         </div>
 
         <div class="preview-section" id="previewSection">
@@ -362,7 +372,7 @@
             </div>
             <div id="menuItemsList"></div>
             <button type="button" class="btn-primary btn-green" onclick="saveToSheets()">✅ Save to Google Sheets</button>
-            <a href="https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc" target="_blank" rel="noopener" class="btn-primary btn-blue">📊 Open Google Sheet</a>
+            <a href="https://docs.google.com/spreadsheets/d/1kEwBmSSFf09rOy782nLSJVtT5vboLwXrBT1XpFxkP9w" target="_blank" rel="noopener" class="btn-primary btn-blue">📊 Open Google Sheet</a>
         </div>
     </div>
 </div>
@@ -381,16 +391,121 @@
                 <button type="button" onclick="addIgnoreItem()">+ Add</button>
             </div>
             <button type="button" class="btn-reset-modal" onclick="resetIgnoreList()">↺ Reset to Defaults</button>
+
+            <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">📁 Google Drive Setup</div>
+                <div class="modal-info">To enable Google Drive picker, you need a Google Cloud project with Picker API enabled. <a href="https://console.cloud.google.com" target="_blank" style="color:#2c5f8a">Open Google Console →</a></div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">API Key</label>
+                    <input type="text" class="form-input" id="cfgApiKey" placeholder="AIzaSy..." oninput="saveGoogleConfig()">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">OAuth Client ID</label>
+                    <input type="text" class="form-input" id="cfgClientId" placeholder="xxxx.apps.googleusercontent.com" oninput="saveGoogleConfig()">
+                </div>
+                <div>
+                    <label class="form-label">App ID (Project Number)</label>
+                    <input type="text" class="form-input" id="cfgAppId" placeholder="123456789" oninput="saveGoogleConfig()">
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script>
 var extractedData = null;
 var imageFile = null;
 var originalImage = null;
-var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwTfTpXjhYheiYVXclyVMxJRqC1lsVKcRa1tH7mNmBcjg8AeRlnYwwZBBcPAzHX1OqiYg/exec';
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw0MZG9bmL8qyrFho_vcBph3HmRquiUCf0QfzXOVPwMJkxO0ww-SNO8kAJHGidlz5zfOw/exec';
+
+/* ═══ GOOGLE DRIVE PICKER ═══ */
+// To enable Google Drive picker:
+// 1. Go to https://console.cloud.google.com
+// 2. Create a project (or use existing)
+// 3. Enable "Google Picker API" and "Google Drive API"
+// 4. Create an API Key (APIs & Services > Credentials > Create > API Key)
+// 5. Create an OAuth 2.0 Client ID (Type: Web application, add your domain to Authorized JavaScript origins)
+// 6. Replace the values below:
+var GOOGLE_API_KEY = '';      // Your API Key here
+var GOOGLE_CLIENT_ID = '';    // Your OAuth Client ID here
+var GOOGLE_APP_ID = '';       // Your project number (from project settings)
+
+var pickerApiLoaded = false;
+var oauthToken = null;
+var tokenClient = null;
+
+function openGoogleDrivePicker() {
+    if (!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID) {
+        showAlert('error', 'Google Drive not configured. API Key & Client ID needed — see Settings.');
+        return;
+    }
+    gapi.load('picker', function() {
+        pickerApiLoaded = true;
+        if (!tokenClient) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/drive.readonly',
+                callback: function(response) {
+                    if (response.error) {
+                        showAlert('error', 'Google auth failed: ' + response.error);
+                        return;
+                    }
+                    oauthToken = response.access_token;
+                    createAndShowPicker();
+                }
+            });
+        }
+        if (!oauthToken) {
+            tokenClient.requestAccessToken({ prompt: '' });
+        } else {
+            createAndShowPicker();
+        }
+    });
+}
+
+function createAndShowPicker() {
+    if (!pickerApiLoaded || !oauthToken) return;
+    var view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES);
+    view.setMimeTypes('image/png,image/jpeg,image/gif,image/webp,image/bmp');
+    view.setIncludeFolders(true);
+
+    var picker = new google.picker.PickerBuilder()
+        .setTitle('Select Menu Image from Google Drive')
+        .addView(view)
+        .addView(new google.picker.DocsView(google.picker.ViewId.RECENTLY_PICKED))
+        .setOAuthToken(oauthToken)
+        .setDeveloperKey(GOOGLE_API_KEY)
+        .setAppId(GOOGLE_APP_ID)
+        .setCallback(pickerCallback)
+        .build();
+    picker.setVisible(true);
+}
+
+function pickerCallback(data) {
+    if (data.action === google.picker.Action.PICKED) {
+        var doc = data.docs[0];
+        var fileId = doc.id;
+        var fileName = doc.name;
+        showAlert('success', 'Loading "' + fileName + '" from Google Drive...');
+        
+        // Download the file via Drive API
+        fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
+            headers: { 'Authorization': 'Bearer ' + oauthToken }
+        })
+        .then(function(response) { return response.blob(); })
+        .then(function(blob) {
+            var file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+            handleFile(file);
+        })
+        .catch(function(err) {
+            console.error('Drive download error:', err);
+            showAlert('error', 'Failed to download file from Drive.');
+        });
+    }
+}
 
 var DEFAULT_IGNORE = [
     'decor','tablecloth','linen','flowers','centerpiece',
@@ -404,6 +519,10 @@ var ignoreList = JSON.parse(localStorage.getItem('ignoreList2')) || DEFAULT_IGNO
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('eventDate').valueAsDate = new Date();
+    var cfg=JSON.parse(localStorage.getItem('googleDriveConfig')||'{}');
+    if(cfg.apiKey)GOOGLE_API_KEY=cfg.apiKey;
+    if(cfg.clientId)GOOGLE_CLIENT_ID=cfg.clientId;
+    if(cfg.appId)GOOGLE_APP_ID=cfg.appId;
 });
 
 function handleFile(file) {
@@ -630,8 +749,24 @@ function saveToSheets(){
     fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:rows})}).then(function(){showAlert('success','Saved '+rows.length+' items!');setTimeout(function(){location.reload()},3000);}).catch(function(){showAlert('error','Failed to save.');});
 }
 
-function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();}
+function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();loadGoogleConfig();}
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
+
+function saveGoogleConfig(){
+    var cfg={apiKey:document.getElementById('cfgApiKey').value.trim(),clientId:document.getElementById('cfgClientId').value.trim(),appId:document.getElementById('cfgAppId').value.trim()};
+    localStorage.setItem('googleDriveConfig',JSON.stringify(cfg));
+    GOOGLE_API_KEY=cfg.apiKey;GOOGLE_CLIENT_ID=cfg.clientId;GOOGLE_APP_ID=cfg.appId;
+    oauthToken=null;tokenClient=null;
+}
+function loadGoogleConfig(){
+    var cfg=JSON.parse(localStorage.getItem('googleDriveConfig')||'{}');
+    document.getElementById('cfgApiKey').value=cfg.apiKey||'';
+    document.getElementById('cfgClientId').value=cfg.clientId||'';
+    document.getElementById('cfgAppId').value=cfg.appId||'';
+    if(cfg.apiKey)GOOGLE_API_KEY=cfg.apiKey;
+    if(cfg.clientId)GOOGLE_CLIENT_ID=cfg.clientId;
+    if(cfg.appId)GOOGLE_APP_ID=cfg.appId;
+}
 function renderIgnore(){var c=document.getElementById('ignoreListContainer');if(!ignoreList.length){c.innerHTML='<p style="text-align:center;color:#999;padding:16px">Empty</p>';return;}c.innerHTML=ignoreList.map(function(item,i){return'<div class="ignore-item"><span>'+esc(item)+'</span><button type="button" onclick="removeIgnore('+i+')">Remove</button></div>';}).join('');}
 function addIgnoreItem(){var inp=document.getElementById('newIgnoreItem');var v=inp.value.trim().toLowerCase();if(!v)return;if(ignoreList.indexOf(v)>=0){showAlert('error','Already exists.');return;}ignoreList.push(v);localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();inp.value='';}
 function removeIgnore(i){ignoreList.splice(i,1);localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();}
