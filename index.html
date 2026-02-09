@@ -439,7 +439,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>&#128203; Menu Scanner</h1>
+            <h1>📋 Menu Scanner</h1>
             <p>Ateres Golda Edition</p>
         </div>
 
@@ -448,17 +448,17 @@
 
         <div class="card" id="uploadCard">
             <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">&#128260;</div>
+                <div class="upload-icon">🔄</div>
                 <h3>Scan or Upload Menu</h3>
                 <p>Optimized for Ateres Golda format</p>
             </div>
             
             <div class="upload-options">
                 <button class="upload-btn" onclick="document.getElementById('cameraInput').click()">
-                    &#128248; Take Photo
+                    📸 Take Photo
                 </button>
                 <button class="upload-btn" onclick="document.getElementById('imageInput').click()">
-                    &#128444;&#65039; Upload Image
+                    🖼️ Upload Image
                 </button>
             </div>
 
@@ -497,11 +497,11 @@
                         <label>Event Type (Affair)</label>
                         <select id="eventType">
                             <option value="">Select type...</option>
-                            <option value="Wedding">Wedding (ÃâÃÂªÃâ¢ÃÂ Ãâ)</option>
-                            <option value="Bar Mitzvah">Bar Mitzvah (ÃâÃÂ¨ ÃÅ¾ÃÂ¦Ãâ¢Ãâ¢Ãâ)</option>
-                            <option value="Sheva Brachot">Sheva Brachot (ÃÂ©ÃâÃÂ¢ ÃâÃÂ¨ÃâºÃâ¢ÃÂª)</option>
-                            <option value="Vort">Vort (Ãâ¢Ãâ¢ÃÂ¨ÃË)</option>
-                            <option value="Shabbat">Shabbat (ÃÂ©ÃâÃÂª)</option>
+                            <option value="Wedding">Wedding</option>
+                            <option value="Bar Mitzvah">Bar Mitzvah</option>
+                            <option value="Sheva Brachot">Sheva Brachot</option>
+                            <option value="Vort">Vort</option>
+                            <option value="Shabbat">Shabbat</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -509,8 +509,8 @@
                         <label>Hall Name</label>
                         <select id="hallName">
                             <option value="">Select hall...</option>
-                            <option value="Ateres Golda">Ateres Golda (ÃÂ¢ÃËÃÂ¨ÃÂª ÃâÃâ¢ÃÅÃâÃâ)</option>
-                            <option value="Scharf">Scharf (ÃÂ©ÃÂÃÂ¨ÃÂ£)</option>
+                            <option value="Ateres Golda">Ateres Golda</option>
+                            <option value="Scharf">Scharf</option>
                             <option value="LH">LH</option>
                         </select>
                     </div>
@@ -563,7 +563,7 @@
                 <p>Common items to ignore: decorations, serving items, tax, headers</p>
             </div>
 
-            <div class="section-title">&#128203; Current Ignore List:</div>
+            <div class="section-title">📋 Current Ignore List:</div>
             <div id="ignoreList" class="ignore-list"></div>
 
             <div class="add-ignore-section">
@@ -773,6 +773,9 @@
             hideMessages();
 
             try {
+                console.log('Starting OCR scan...');
+                console.log('Tesseract available:', typeof Tesseract !== 'undefined');
+                
                 const worker = await Tesseract.createWorker({
                     logger: m => {
                         if (m.status === 'recognizing text') {
@@ -783,8 +786,11 @@
                     }
                 });
 
+                console.log('Worker created successfully');
                 await worker.loadLanguage('eng');
+                console.log('Language loaded');
                 await worker.initialize('eng');
+                console.log('Worker initialized');
                 
                 const { data: { text } } = await worker.recognize(imageFile);
                 await worker.terminate();
@@ -793,11 +799,14 @@
 
                 // Parse the extracted text with Ateres Golda specific logic
                 extractedData = parseAteresGoldaMenu(text);
+                console.log('Parsed data:', extractedData);
                 displayResults();
 
             } catch (error) {
-                console.error('Error:', error);
-                showError('Failed to scan menu. Please try again with a clearer image.');
+                console.error('Detailed Error:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                showError('Failed to scan menu: ' + error.message);
                 document.getElementById('uploadCard').style.display = 'block';
             } finally {
                 document.getElementById('loading').style.display = 'none';
@@ -807,6 +816,9 @@
         function parseAteresGoldaMenu(text) {
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             
+            console.log('📄 OCR Raw Text (first 30 lines):');
+            lines.slice(0, 30).forEach((line, i) => console.log(`  ${i}: ${line}`));
+            
             const eventInfo = {
                 date: '',
                 eventType: '',
@@ -815,79 +827,195 @@
                 eventOwner: ''
             };
             
-            // Extract header information - look more carefully
-            for (let i = 0; i < Math.min(20, lines.length); i++) {
+            // IMPROVED: Search entire text for date patterns (not just near "Event Date")
+            for (let i = 0; i < Math.min(30, lines.length); i++) {
                 const line = lines[i];
                 const lowerLine = line.toLowerCase();
                 
-                // Look for Event Date - more flexible patterns
-                if (lowerLine.includes('event date') || lowerLine.includes('date')) {
-                    // Check next line or same line
+                // Find ANY date pattern in first 30 lines
+                if (!eventInfo.date) {
                     const dateMatch = line.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
                     if (dateMatch) {
                         eventInfo.date = convertToISODate(dateMatch[0]);
-                    } else if (i + 1 < lines.length) {
-                        const nextDateMatch = lines[i + 1].match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
-                        if (nextDateMatch) {
-                            eventInfo.date = convertToISODate(nextDateMatch[0]);
+                        console.log('✅ Found date:', eventInfo.date, 'from line:', line);
+                    }
+                }
+                
+                // IMPROVED: Look for event types ANYWHERE (Wedding, Bar Mitzvah, Aufruf, etc.)
+                if (!eventInfo.eventType) {
+                    const eventTypes = ['wedding', 'aufruf', 'bar mitzvah', 'bat mitzvah', 'sheva brachot', 'vort', 'shabbat'];
+                    for (let type of eventTypes) {
+                        if (lowerLine.includes(type)) {
+                            // Capitalize first letter of each word
+                            eventInfo.eventType = type.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            console.log('✅ Found event type:', eventInfo.eventType, 'from line:', line);
+                            break;
                         }
                     }
                 }
                 
-                // Look for Affair/Event Type
-                if (lowerLine.includes('affair')) {
-                    // Check same line first
-                    const words = line.split(/\s+/);
-                    const affairIndex = words.findIndex(w => w.toLowerCase().includes('affair'));
-                    if (affairIndex >= 0 && affairIndex + 1 < words.length) {
-                        const possibleType = words[affairIndex + 1];
-                        if (possibleType && possibleType.length > 2 && !possibleType.match(/\d/)) {
-                            eventInfo.eventType = possibleType;
+                // IMPROVED: Look for "Affair" label and check nearby text
+                if (!eventInfo.eventType && lowerLine.includes('affair')) {
+                    // Check same line after "Affair"
+                    const afterAffair = line.split(/affair/i)[1];
+                    if (afterAffair) {
+                        const words = afterAffair.trim().split(/\s+/);
+                        if (words[0] && words[0].length > 2 && !words[0].match(/\d/)) {
+                            eventInfo.eventType = words[0];
+                            console.log('✅ Found event type near Affair:', eventInfo.eventType);
                         }
                     }
                     
-                    // Also check next line
+                    // Check next line
                     if (!eventInfo.eventType && i + 1 < lines.length) {
-                        const nextLine = lines[i + 1];
-                        if (nextLine.length < 20 && !nextLine.match(/\d{2,}/) && nextLine.match(/^[A-Z][a-z]+$/)) {
+                        const nextLine = lines[i + 1].trim();
+                        if (nextLine.length > 2 && nextLine.length < 25 && !nextLine.match(/\d{3,}/)) {
                             eventInfo.eventType = nextLine;
+                            console.log('✅ Found event type on next line:', eventInfo.eventType);
                         }
                     }
                 }
                 
-                // Look for Party Names
-                if (lowerLine.includes('party') && lowerLine.includes('name')) {
-                    // Check same line
-                    const namePart = line.split(/party\s*names?/i)[1];
-                    if (namePart && namePart.trim().length > 0 && namePart.trim().length < 30) {
-                        eventInfo.eventOwner = namePart.trim();
+                // IMPROVED: Look for Party Names - more flexible
+                if (!eventInfo.eventOwner && (lowerLine.includes('party') || lowerLine.includes('name'))) {
+                    // Try to find the name after "Party Names" label
+                    const nameMatch = line.match(/party\s*names?\s*[:\-]?\s*([A-Z][a-z]+)/i);
+                    if (nameMatch && nameMatch[1]) {
+                        eventInfo.eventOwner = nameMatch[1];
+                        console.log('✅ Found party name:', eventInfo.eventOwner, 'from line:', line);
+                    } else if (i + 1 < lines.length) {
+                        // Check next line
+                        const nextLine = lines[i + 1].trim();
+                        // Look for capitalized words (likely names)
+                        const possibleName = nextLine.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
+                        if (possibleName && possibleName[1] && possibleName[1].length < 30) {
+                            // Make sure it's not a menu item or header
+                            if (!possibleName[1].match(/Menu|Additional|Information|Ball|Room|Event/i)) {
+                                eventInfo.eventOwner = possibleName[1];
+                                console.log('✅ Found party name on next line:', eventInfo.eventOwner);
+                            }
+                        }
                     }
+                }
+                
+                // IMPROVED: Look for event size near "People", "MEN", "LADIES"
+                if (!eventInfo.eventSize) {
+                    // Pattern: "175 MEN" or "75 LADIES" or "25-30 People"
+                    const sizePatterns = [
+                        /(\d{2,3})\s*(?:MEN|men|Men)/i,
+                        /(\d{2,3})\s*(?:LADIES|ladies|Ladies)/i,
+                        /(\d{1,3}[\s\-]*\d{0,3})\s*(?:people|People|PEOPLE)/i
+                    ];
                     
-                    // Also check next line
-                    if (!eventInfo.eventOwner && i + 1 < lines.length) {
-                        const nextLine = lines[i + 1];
-                        if (nextLine.length < 30 && !nextLine.match(/\d{2,}/) && nextLine.match(/^[A-Z]/)) {
-                            eventInfo.eventOwner = nextLine;
+                    for (let pattern of sizePatterns) {
+                        const match = line.match(pattern);
+                        if (match && match[1]) {
+                            eventInfo.eventSize = match[1].replace(/\s/g, '');
+                            console.log('✅ Found event size:', eventInfo.eventSize, 'from line:', line);
+                            break;
                         }
-                    }
-                }
-                
-                // Look for guest count - standalone numbers
-                if (line.match(/^\d{1,3}$/)) {
-                    const num = parseInt(line);
-                    if (num >= 10 && num <= 999) {
-                        eventInfo.eventSize = line;
-                    }
-                }
-                
-                // Also look for patterns like "25-30 People"
-                if (lowerLine.match(/\d{1,3}[\s\-]*\d{0,3}\s*people/)) {
-                    const sizeMatch = line.match(/(\d{1,3}[\s\-]*\d{0,3})/);
-                    if (sizeMatch) {
-                        eventInfo.eventSize = sizeMatch[0].replace(/\s/g, '');
                     }
                 }
             }
+            
+            console.log('📊 Extracted Event Info:', eventInfo);
+            
+            const menuItems = [];
+            let currentCategory = '';
+            
+            // Parse menu items - look for specific patterns
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // Detect categories
+                if (line.match(/FRIDAY NIGHT|KIDDISH|MEN[\s\-]|LADIES[\s\-]|KAYX|INDEVIDUAL|MENU/i)) {
+                    currentCategory = line;
+                    continue;
+                }
+                
+                // Skip very short lines or pure numbers
+                if (line.length < 3 || line.match(/^\d+$/)) {
+                    continue;
+                }
+                
+                // Detect checkbox indicators
+                const hasCheckMark = line.includes('☑') || line.includes('✓') || line.includes('✔') || line.includes('V');
+                const hasCrossMark = line.includes('☒') || line.includes('✗') || line.includes('✘') || line.includes('X');
+                
+                // Extract dish name and amount
+                let dishName = line
+                    .replace(/[☑✓✔☒✗✘]/g, '')
+                    .replace(/^\s*[-•*]\s*/, '')
+                    .trim();
+                
+                // IMPROVED: Look for number in box (amount remained) - anywhere in line
+                let amountRemained = '';
+                
+                // Strategy 1: Try to find 2-3 digit number at the end of line (most common)
+                let amountMatch = line.match(/(\d{2,3})\s*$/);
+                if (amountMatch) {
+                    amountRemained = amountMatch[1];
+                    dishName = dishName.replace(amountMatch[0], '').trim();
+                    console.log('  → Found amount at end:', amountRemained, '| Dish:', dishName);
+                }
+                
+                // Strategy 2: If not found at end, look for standalone number in brackets/box
+                if (!amountRemained) {
+                    amountMatch = line.match(/\[(\d{2,3})\]|[\|\(\{](\d{2,3})[\|\)\}]/);
+                    if (amountMatch) {
+                        amountRemained = amountMatch[1] || amountMatch[2];
+                        dishName = dishName.replace(amountMatch[0], '').trim();
+                        console.log('  → Found amount in box:', amountRemained, '| Dish:', dishName);
+                    }
+                }
+                
+                // Strategy 3: Look for number after checkmark/cross
+                if (!amountRemained) {
+                    amountMatch = line.match(/[☑✓✔☒✗✘VX]\s*(\d{2,3})/i);
+                    if (amountMatch) {
+                        amountRemained = amountMatch[1];
+                        dishName = dishName.replace(amountMatch[0], '').trim();
+                        console.log('  → Found amount after mark:', amountRemained, '| Dish:', dishName);
+                    }
+                }
+                
+                // Strategy 4: Any 2-3 digit number in the line (last resort)
+                if (!amountRemained) {
+                    const allNumbers = line.match(/\d{2,3}/g);
+                    if (allNumbers && allNumbers.length === 1) {
+                        amountRemained = allNumbers[0];
+                        dishName = dishName.replace(allNumbers[0], '').trim();
+                        console.log('  → Found single number:', amountRemained, '| Dish:', dishName);
+                    }
+                }
+                
+                // Only add if it looks like a dish name AND not in ignore list
+                if (dishName.length > 3 && 
+                    !dishName.match(/^(Ateres|Golda|Menu|Affair|Event|Ball|Room|Party|Names|Date|Additional|Information|Qty)$/i) &&
+                    !shouldIgnoreItem(dishName)) {
+                    
+                    let status = 'Unknown';
+                    if (hasCheckMark) status = 'Remained';
+                    if (hasCrossMark) status = 'Finished';
+                    
+                    menuItems.push({
+                        dishName: dishName,
+                        status: status,
+                        amountRemained: amountRemained,
+                        category: currentCategory,
+                        reason: '',
+                        notes: ''
+                    });
+                }
+            }
+            
+            console.log('🍽️ Found', menuItems.length, 'menu items');
+            
+            return {
+                eventInfo: eventInfo,
+                menuItems: menuItems
+            };
+        }
             
             const menuItems = [];
             let currentCategory = '';
@@ -1045,18 +1173,18 @@
 
         function normalizeEventTypeForDropdown(type) {
             var t = (type || '').toLowerCase();
-            if (t.includes('wedding') || t.includes('ÃâÃÂªÃâ¢ÃÂ Ãâ')) return 'Wedding';
-            if (t.includes('bar') || t.includes('ÃâÃÂ¨ ÃÅ¾ÃÂ¦Ãâ¢Ãâ¢Ãâ')) return 'Bar Mitzvah';
-            if (t.includes('sheva') || t.includes('ÃÂ©ÃâÃÂ¢ ÃâÃÂ¨ÃâºÃâ¢ÃÂª')) return 'Sheva Brachot';
-            if (t.includes('vort') || t.includes('Ãâ¢Ãâ¢ÃÂ¨ÃË')) return 'Vort';
-            if (t.includes('shabbat') || t.includes('ÃÂ©ÃâÃÂª')) return 'Shabbat';
+            if (t.includes('wedding')) return 'Wedding';
+            if (t.includes('bar mitzvah') || t.includes('bar')) return 'Bar Mitzvah';
+            if (t.includes('sheva')) return 'Sheva Brachot';
+            if (t.includes('vort')) return 'Vort';
+            if (t.includes('shabbat')) return 'Shabbat';
             return '';
         }
 
         function normalizeHallNameForDropdown(hall) {
             var h = (hall || '').toLowerCase();
-            if (h.includes('ateres') || h.includes('golda') || h.includes('ÃÂ¢ÃËÃÂ¨ÃÂª')) return 'Ateres Golda';
-            if (h.includes('scharf') || h.includes('ÃÂ©ÃÂÃÂ¨ÃÂ£')) return 'Scharf';
+            if (h.includes('ateres') || h.includes('golda')) return 'Ateres Golda';
+            if (h.includes('scharf')) return 'Scharf';
             if (h.includes('lh')) return 'LH';
             return '';
         }
