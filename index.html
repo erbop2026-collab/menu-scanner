@@ -674,20 +674,20 @@
     <div class="card" id="uploadCard">
         <div class="card-title">Scan Menu</div>
         <div class="upload-actions">
-            <div class="upload-btn" onclick="document.getElementById('cameraInput').click()">
+            <label class="upload-btn" for="cameraInput">
                 <span class="upload-btn-icon">📸</span>
                 <div class="upload-btn-label">Take Photo</div>
                 <div class="upload-btn-hint">Use camera</div>
-            </div>
-            <div class="upload-btn" onclick="document.getElementById('imageInput').click()">
+            </label>
+            <label class="upload-btn" for="imageInput">
                 <span class="upload-btn-icon">🖼️</span>
                 <div class="upload-btn-label">Upload Image</div>
                 <div class="upload-btn-hint">From gallery</div>
-            </div>
+            </label>
         </div>
 
-        <input type="file" id="cameraInput" accept="image/*" capture="environment">
-        <input type="file" id="imageInput" accept="image/*">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleFile(this.files[0])">
+        <input type="file" id="imageInput" accept="image/*" onchange="handleFile(this.files[0])">
 
         <!-- Preview -->
         <div class="preview-section" id="previewSection">
@@ -862,7 +862,7 @@
 let extractedData = null;
 let imageFile = null;
 let originalImage = null; // HTMLImageElement for canvas
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw0MZG9bmL8qyrFho_vcBph3HmRquiUCf0QfzXOVPwMJkxO0ww-SNO8kAJHGidlz5zfOw/exec;
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwTfTpXjhYheiYVXclyVMxJRqC1lsVKcRa1tH7mNmBcjg8AeRlnYwwZBBcPAzHX1OqiYg/exec';
 
 // ── Default Ignore List ──
 const DEFAULT_IGNORE_LIST = [
@@ -880,31 +880,45 @@ function saveIgnoreList() { localStorage.setItem('ignoreList', JSON.stringify(ig
 // ── Init ──
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('eventDate').valueAsDate = new Date();
-    document.getElementById('cameraInput').addEventListener('change', e => handleFile(e.target.files[0]));
-    document.getElementById('imageInput').addEventListener('change', e => handleFile(e.target.files[0]));
 });
 
 // ── File Handling ──
 function handleFile(file) {
-    if (!file || !file.type.startsWith('image/')) { showAlert('error', 'Please select an image file.'); return; }
+    if (!file) { showAlert('error', 'No file selected.'); return; }
+    
+    // Accept any image type (some phones send weird MIME types)
+    if (!file.type.startsWith('image/') && !file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp|heic|heif)$/i)) {
+        showAlert('error', 'Please select an image file.');
+        return;
+    }
+
     imageFile = file;
     document.getElementById('fileName').textContent = file.name;
 
     const reader = new FileReader();
+    reader.onerror = function() {
+        showAlert('error', 'Failed to read file. Please try again.');
+    };
     reader.onload = function(e) {
         const img = new Image();
+        img.onerror = function() {
+            showAlert('error', 'Failed to load image. Please try a different file.');
+        };
         img.onload = function() {
             originalImage = img;
             drawPreview();
             document.getElementById('previewSection').classList.add('show');
             document.getElementById('alignTools').classList.add('show');
             document.getElementById('scanButton').style.display = '';
-            // Auto enhance on load
             autoAlign();
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
+
+    // Reset inputs so same file can be selected again
+    document.getElementById('cameraInput').value = '';
+    document.getElementById('imageInput').value = '';
 }
 
 // ── Canvas Drawing / Alignment ──
