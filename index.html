@@ -439,7 +439,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📋 Menu Scanner</h1>
+            <h1>ðŸ“‹ Menu Scanner</h1>
             <p>Ateres Golda Edition</p>
         </div>
 
@@ -448,17 +448,17 @@
 
         <div class="card" id="uploadCard">
             <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📄</div>
+                <div class="upload-icon">ðŸ“„</div>
                 <h3>Scan or Upload Menu</h3>
                 <p>Optimized for Ateres Golda format</p>
             </div>
             
             <div class="upload-options">
                 <button class="upload-btn" onclick="document.getElementById('cameraInput').click()">
-                    📸 Take Photo
+                    ðŸ“¸ Take Photo
                 </button>
                 <button class="upload-btn" onclick="document.getElementById('imageInput').click()">
-                    🖼️ Upload Image
+                    ðŸ–¼ï¸ Upload Image
                 </button>
             </div>
 
@@ -466,13 +466,13 @@
             <input type="file" id="imageInput" accept="image/*">
             
             <div class="file-info" id="fileInfo">
-                <span>📎</span>
+                <span>ðŸ“Ž</span>
                 <span id="fileName"></span>
             </div>
             
             <img id="previewImage" class="preview-image">
             
-            <button id="scanButton" onclick="scanMenu()" style="display: none;">🔍 Scan Menu</button>
+            <button id="scanButton" onclick="scanMenu()" style="display: none;">ðŸ” Scan Menu</button>
         </div>
 
         <div class="loading" id="loading">
@@ -485,7 +485,7 @@
 
         <div class="results" id="results">
             <div class="card">
-                <h2 style="margin-bottom: 20px;">📝 Review & Edit Data</h2>
+                <h2 style="margin-bottom: 20px;">ðŸ“ Review & Edit Data</h2>
                 
                 <div class="form-group">
                     <label>Date</label>
@@ -497,11 +497,11 @@
                         <label>Event Type (Affair)</label>
                         <select id="eventType">
                             <option value="">Select type...</option>
-                            <option value="Wedding">Wedding (חתונה)</option>
-                            <option value="Bar Mitzvah">Bar Mitzvah (בר מצווה)</option>
-                            <option value="Sheva Brachot">Sheva Brachot (שבע ברכות)</option>
-                            <option value="Vort">Vort (וורט)</option>
-                            <option value="Shabbat">Shabbat (שבת)</option>
+                            <option value="Wedding">Wedding (×—×ª×•× ×”)</option>
+                            <option value="Bar Mitzvah">Bar Mitzvah (×‘×¨ ×ž×¦×•×•×”)</option>
+                            <option value="Sheva Brachot">Sheva Brachot (×©×‘×¢ ×‘×¨×›×•×ª)</option>
+                            <option value="Vort">Vort (×•×•×¨×˜)</option>
+                            <option value="Shabbat">Shabbat (×©×‘×ª)</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -509,8 +509,8 @@
                         <label>Hall Name</label>
                         <select id="hallName">
                             <option value="">Select hall...</option>
-                            <option value="Ateres Golda">Ateres Golda (עטרת גולדה)</option>
-                            <option value="Scharf">Scharf (שארף)</option>
+                            <option value="Ateres Golda">Ateres Golda (×¢×˜×¨×ª ×’×•×œ×“×”)</option>
+                            <option value="Scharf">Scharf (×©××¨×£)</option>
                             <option value="LH">LH</option>
                         </select>
                     </div>
@@ -526,7 +526,7 @@
                         <option value="South">South</option>
                     </select>
                     <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        💡 Select side if hall is split for multiple events
+                        ðŸ’¡ Select side if hall is split for multiple events
                     </p>
                 </div>
 
@@ -544,30 +544,30 @@
                 <h3 style="margin: 25px 0 15px 0;">Menu Items</h3>
                 <div id="menuItemsList"></div>
 
-                <button onclick="saveToSheets()">✅ Save to Google Sheets</button>
+                <button onclick="saveToSheets()">âœ… Save to Google Sheets</button>
             </div>
         </div>
     </div>
 
-    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    <button class="settings-btn" onclick="openSettings()">âš™ï¸</button>
 
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>⚙️ Settings</h2>
+                <h2>âš™ï¸ Settings</h2>
                 <button class="close-btn" onclick="closeSettings()">&times;</button>
             </div>
 
             <div class="info-box">
-                <p><strong>💡 Ignore List:</strong> Items in this list will be automatically filtered out during scanning.</p>
+                <p><strong>ðŸ’¡ Ignore List:</strong> Items in this list will be automatically filtered out during scanning.</p>
                 <p>Common items to ignore: decorations, serving items, tax, headers</p>
             </div>
 
-            <div class="section-title">📋 Current Ignore List:</div>
+            <div class="section-title">ðŸ“‹ Current Ignore List:</div>
             <div id="ignoreList" class="ignore-list"></div>
 
             <div class="add-ignore-section">
-                <div class="section-title">➕ Add New Item to Ignore:</div>
+                <div class="section-title">âž• Add New Item to Ignore:</div>
                 <div style="display: flex; align-items: center; margin-top: 10px;">
                     <input type="text" id="newIgnoreItem" placeholder="e.g., Sales Tax, Decor, Tablecloth..." onkeypress="if(event.key==='Enter') addIgnoreItem()">
                     <button onclick="addIgnoreItem()">Add</button>
@@ -575,7 +575,7 @@
             </div>
 
             <div style="margin-top: 20px;">
-                <button onclick="resetIgnoreList()" style="background: #ff9800;">🔄 Reset to Default</button>
+                <button onclick="resetIgnoreList()" style="background: #ff9800;">ðŸ”„ Reset to Default</button>
             </div>
         </div>
     </div>
@@ -584,7 +584,7 @@
     <script>
         let extractedData = null;
         let imageFile = null;
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwTfTpXjhYheiYVXclyVMxJRqC1lsVKcRa1tH7mNmBcjg8AeRlnYwwZBBcPAzHX1OqiYg/exec';
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxnrX9Kyuk5BU740nh_nJXiaoq4hORU-OSR4JHZxFMXZ0Utv_aWr6zr5ca5YaMksTiuNQ/exec';
 
         // Default ignore list - common items that aren't food
         const DEFAULT_IGNORE_LIST = [
@@ -908,13 +908,13 @@
                 }
                 
                 // Detect checkbox indicators
-                const hasCheckMark = line.includes('☑') || line.includes('✓') || line.includes('✔') || line.includes('V');
-                const hasCrossMark = line.includes('☒') || line.includes('✗') || line.includes('✘') || line.includes('X');
+                const hasCheckMark = line.includes('â˜‘') || line.includes('âœ“') || line.includes('âœ”') || line.includes('V');
+                const hasCrossMark = line.includes('â˜’') || line.includes('âœ—') || line.includes('âœ˜') || line.includes('X');
                 
                 // Extract dish name and amount
                 let dishName = line
-                    .replace(/[☑✓✔☒✗✘]/g, '')
-                    .replace(/^\s*[-•*]\s*/, '')
+                    .replace(/[â˜‘âœ“âœ”â˜’âœ—âœ˜]/g, '')
+                    .replace(/^\s*[-â€¢*]\s*/, '')
                     .trim();
                 
                 // Look for number in box (amount remained) - at end of line
@@ -1045,18 +1045,18 @@
 
         function normalizeEventTypeForDropdown(type) {
             var t = (type || '').toLowerCase();
-            if (t.includes('wedding') || t.includes('חתונה')) return 'Wedding';
-            if (t.includes('bar') || t.includes('בר מצווה')) return 'Bar Mitzvah';
-            if (t.includes('sheva') || t.includes('שבע ברכות')) return 'Sheva Brachot';
-            if (t.includes('vort') || t.includes('וורט')) return 'Vort';
-            if (t.includes('shabbat') || t.includes('שבת')) return 'Shabbat';
+            if (t.includes('wedding') || t.includes('×—×ª×•× ×”')) return 'Wedding';
+            if (t.includes('bar') || t.includes('×‘×¨ ×ž×¦×•×•×”')) return 'Bar Mitzvah';
+            if (t.includes('sheva') || t.includes('×©×‘×¢ ×‘×¨×›×•×ª')) return 'Sheva Brachot';
+            if (t.includes('vort') || t.includes('×•×•×¨×˜')) return 'Vort';
+            if (t.includes('shabbat') || t.includes('×©×‘×ª')) return 'Shabbat';
             return '';
         }
 
         function normalizeHallNameForDropdown(hall) {
             var h = (hall || '').toLowerCase();
-            if (h.includes('ateres') || h.includes('golda') || h.includes('עטרת')) return 'Ateres Golda';
-            if (h.includes('scharf') || h.includes('שארף')) return 'Scharf';
+            if (h.includes('ateres') || h.includes('golda') || h.includes('×¢×˜×¨×ª')) return 'Ateres Golda';
+            if (h.includes('scharf') || h.includes('×©××¨×£')) return 'Scharf';
             if (h.includes('lh')) return 'LH';
             return '';
         }
