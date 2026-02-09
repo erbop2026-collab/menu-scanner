@@ -434,6 +434,40 @@
             color: #1565c0;
             font-size: 14px;
         }
+
+        .open-sheet-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .open-sheet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+
+        @media (max-width: 600px) {
+            .open-sheet-btn {
+                bottom: 80px;
+                right: 10px;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -551,6 +585,10 @@
 
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 
+    <button class="open-sheet-btn" onclick="openGoogleSheet()">
+        📊 Open Google Sheet
+    </button>
+
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -639,6 +677,12 @@
 
         function closeSettings() {
             document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function openGoogleSheet() {
+            // Google Sheets URL
+            const sheetUrl = 'https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc/edit';
+            window.open(sheetUrl, '_blank');
         }
 
         function displayIgnoreList() {
@@ -1291,9 +1335,21 @@ Be precise. Only include items people actually EAT.`;
 
                 showSuccess(`Successfully saved ${rows.length} menu items to Google Sheets!`);
                 
+                // Add link to open Google Sheets
+                const successMsg = document.getElementById('successMessage');
+                const openLink = document.createElement('a');
+                openLink.href = 'https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc/edit';
+                openLink.target = '_blank';
+                openLink.style.display = 'block';
+                openLink.style.marginTop = '10px';
+                openLink.style.color = '#2e7d32';
+                openLink.style.fontWeight = 'bold';
+                openLink.textContent = '📊 Click here to view Google Sheet';
+                successMsg.appendChild(openLink);
+                
                 setTimeout(() => {
                     location.reload();
-                }, 2000);
+                }, 3000);
 
             } catch (error) {
                 console.error('Error:', error);
