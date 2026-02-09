@@ -989,6 +989,64 @@
                     }
                 }
                 
+                // NEW: Look for reason text in brackets or after amount
+                let reason = '';
+                
+                // Common reason patterns to look for
+                const reasonPatterns = [
+                    /didn'?t\s+show/i,
+                    /left\s+over/i,
+                    /too\s+much/i,
+                    /not\s+fresh/i,
+                    /cold/i,
+                    /overcooked/i,
+                    /undercooked/i,
+                    /not\s+good/i,
+                    /extra/i,
+                    /backup/i
+                ];
+                
+                // Strategy 1: Look for reason text in brackets or quotes
+                const reasonInBrackets = line.match(/\[([^\]]+)\]|\(([^)]+)\)|"([^"]+)"/);
+                if (reasonInBrackets) {
+                    const reasonText = reasonInBrackets[1] || reasonInBrackets[2] || reasonInBrackets[3];
+                    // Check if it's not just a number
+                    if (reasonText && !reasonText.match(/^\d+$/)) {
+                        reason = reasonText.trim();
+                        console.log('  → Found reason in brackets:', reason);
+                    }
+                }
+                
+                // Strategy 2: Look for known reason patterns anywhere in line
+                if (!reason) {
+                    for (let pattern of reasonPatterns) {
+                        const match = line.match(pattern);
+                        if (match) {
+                            reason = match[0];
+                            console.log('  → Found reason pattern:', reason);
+                            break;
+                        }
+                    }
+                }
+                
+                // Strategy 3: Look for text after the number that's not part of dish name
+                if (!reason && amountRemained) {
+                    // Find text after the amount number
+                    const afterAmount = line.split(amountRemained)[1];
+                    if (afterAmount) {
+                        // Extract alphabetic text (not checkmarks or symbols)
+                        const textMatch = afterAmount.match(/([a-zA-Z][a-zA-Z\s']+)/);
+                        if (textMatch && textMatch[1]) {
+                            const possibleReason = textMatch[1].trim();
+                            // Make sure it's not too long and looks like a reason
+                            if (possibleReason.length > 2 && possibleReason.length < 30) {
+                                reason = possibleReason;
+                                console.log('  → Found reason after amount:', reason);
+                            }
+                        }
+                    }
+                }
+                
                 // Only add if it looks like a dish name AND not in ignore list
                 if (dishName.length > 3 && 
                     !dishName.match(/^(Ateres|Golda|Menu|Affair|Event|Ball|Room|Party|Names|Date|Additional|Information|Qty)$/i) &&
@@ -1003,7 +1061,7 @@
                         status: status,
                         amountRemained: amountRemained,
                         category: currentCategory,
-                        reason: '',
+                        reason: reason,  // Use the detected reason
                         notes: ''
                     });
                 }
