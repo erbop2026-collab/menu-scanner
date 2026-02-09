@@ -607,7 +607,7 @@
     <script>
         let extractedData = null;
         let imageFile = null;
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyfMw3e5wZnV3hrJF204CbOX0DSKm_z1LnHeMPqZ1RrePQxAbO46XzoFE2ne2sIprpLLA/exec;
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxnrX9Kyuk5BU740nh_nJXiaoq4hORU-OSR4JHZxFMXZ0Utv_aWr6zr5ca5YaMksTiuNQ/exec';
 
         // Default ignore list - common items that aren't food
         const DEFAULT_IGNORE_LIST = [
@@ -1237,7 +1237,17 @@ Be precise. Only include items people actually EAT.`;
                     <div class="row">
                         <div class="form-group">
                             <label>Reason</label>
-                            <input type="text" id="reason_${index}" value="${item.reason || ''}" placeholder="Why remained?">
+                            <select id="reason_${index}">
+                                <option value="">Select reason...</option>
+                                <option value="Didn't show up" ${item.reason && item.reason.toLowerCase().includes('didn\'t show') ? 'selected' : ''}>Didn't show up</option>
+                                <option value="Left over" ${item.reason && item.reason.toLowerCase().includes('left over') ? 'selected' : ''}>Left over</option>
+                                <option value="Too much ordered" ${item.reason && item.reason.toLowerCase().includes('too much') ? 'selected' : ''}>Too much ordered</option>
+                                <option value="Not fresh" ${item.reason && item.reason.toLowerCase().includes('not fresh') ? 'selected' : ''}>Not fresh</option>
+                                <option value="Didn't like taste" ${item.reason && item.reason.toLowerCase().includes('didn\'t like') || (item.reason && item.reason.toLowerCase().includes('taste')) ? 'selected' : ''}>Didn't like taste</option>
+                                <option value="Poor quality" ${item.reason && item.reason.toLowerCase().includes('poor quality') || (item.reason && item.reason.toLowerCase().includes('quality')) ? 'selected' : ''}>Poor quality</option>
+                                <option value="Wrong item delivered" ${item.reason && item.reason.toLowerCase().includes('wrong') ? 'selected' : ''}>Wrong item delivered</option>
+                                <option value="Other" ${item.reason && !['didn\'t show', 'left over', 'too much', 'not fresh', 'didn\'t like', 'taste', 'quality', 'wrong'].some(r => item.reason.toLowerCase().includes(r)) && item.reason ? 'selected' : ''}>Other</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Notes</label>
