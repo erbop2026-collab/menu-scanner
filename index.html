@@ -909,27 +909,53 @@ Be precise. Only include items people actually EAT.`;
                 eventOwner: ''
             };
             
-            // Extract header information - look more carefully
-            for (let i = 0; i < Math.min(20, lines.length); i++) {
+            // IMPROVED: Extract event info with better patterns and error handling
+            for (let i = 0; i < Math.min(40, lines.length); i++) {
                 const line = lines[i];
                 const lowerLine = line.toLowerCase();
                 
-                // Look for Event Date - more flexible patterns
-                if (lowerLine.includes('event date') || lowerLine.includes('date')) {
-                    // Check next line or same line
-                    const dateMatch = line.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
-                    if (dateMatch) {
-                        eventInfo.date = convertToISODate(dateMatch[0]);
-                    } else if (i + 1 < lines.length) {
-                        const nextDateMatch = lines[i + 1].match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
-                        if (nextDateMatch) {
-                            eventInfo.date = convertToISODate(nextDateMatch[0]);
+                // Look for Event Date - MORE FLEXIBLE patterns to handle OCR errors
+                if (!eventInfo.date) {
+                    // Try multiple date patterns
+                    const datePatterns = [
+                        /\b(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\b/,  // Standard: 10/17/2025
+                        /\b(\d{1,2}[\/\-\.\s]+\d{1,2}[\/\-\.\s]+\d{2,4})\b/,  // With spaces: 10/ 17 /2025
+                        /(\d{1,2})\s*[\/\-\.]\s*[I|l|i](\d)\s*[\/\-\.]\s*(\d{4})/,  // OCR errors: l instead of 1
+                    ];
+                    
+                    for (let pattern of datePatterns) {
+                        const match = line.match(pattern);
+                        if (match) {
+                            let dateStr = match[1];
+                            // Fix common OCR errors
+                            dateStr = dateStr.replace(/[Il]/g, '1').replace(/O/g, '0').replace(/\s+/g, '');
+                            eventInfo.date = convertToISODate(dateStr);
+                            break;
                         }
                     }
                 }
                 
-                // Look for Affair/Event Type
-                if (lowerLine.includes('affair')) {
+                // Look for Affair/Event Type - check for specific keywords
+                if (!eventInfo.eventType) {
+                    const typePatterns = [
+                        { pattern: /\b(aufruf)\b/i, type: 'Aufruf' },
+                        { pattern: /\b(wedding)\b/i, type: 'Wedding' },
+                        { pattern: /\b(bar\s*mitzvah)\b/i, type: 'Bar Mitzvah' },
+                        { pattern: /\b(sheva\s*brachot)\b/i, type: 'Sheva Brachot' },
+                        { pattern: /\b(vort)\b/i, type: 'Vort' },
+                        { pattern: /\b(shabbat|shabbos)\b/i, type: 'Shabbat' }
+                    ];
+                    
+                    for (let {pattern, type} of typePatterns) {
+                        if (pattern.test(line)) {
+                            eventInfo.eventType = type;
+                            break;
+                        }
+                    }
+                }
+                
+                // Look for Affair/Event Type (old method as fallback)
+                if (!eventInfo.eventType && lowerLine.includes('affair')) {
                     // Check same line first
                     const words = line.split(/\s+/);
                     const affairIndex = words.findIndex(w => w.toLowerCase().includes('affair'));
@@ -1036,24 +1062,72 @@ Be precise. Only include items people actually EAT.`;
                     }
                 }
                 
-                // Only add if it looks like a dish name AND not in ignore list
-                if (dishName.length > 3 && 
-                    !dishName.match(/^(Ateres|Golda|Menu|Affair|Event|Ball|Room|Party|Names|Date|Additional|Information|Qty)$/i) &&
-                    !shouldIgnoreItem(dishName)) {
-                    
-                    let status = 'Unknown';
-                    if (hasCheckMark) status = 'Remained';
-                    if (hasCrossMark) status = 'Finished';
-                    
-                    menuItems.push({
-                        dishName: dishName,
-                        status: status,
-                        amountRemained: amountRemained,
-                        category: currentCategory,
-                        reason: reason,
-                        notes: ''
-                    });
+                // IMPROVED: Better filtering of non-food items
+                const lowerDish = dishName.toLowerCase();
+                
+                // Skip if too short
+                if (dishName.length < 3) continue;
+                
+                // Skip headers/labels
+                if (dishName.match(/^(Ateres|Golda|Menu|Affair|Event|Ball|Room|Party|Names|Date|Additional|Information|Qty|Start|Time|Customer|Telephone)$/i)) {
+                    continue;
                 }
+                
+                // Skip category indicators (FRIDAY NIGHT, 25-30 People, Some Kids)
+                if (lowerDish.match(/^\d+\s*-\s*\d+\s*people/i) || 
+                    lowerDish.match(/^some\s+kids/i) ||
+                    lowerDish.match(/^(friday|kiddish|men|ladies|kayx)/i)) {
+                    continue;
+                }
+                
+                // Skip decorations (with multiple keywords to catch variations)
+                if (lowerDish.match(/\b(decor|decoration|burgundy\s+look|olive\s+green\s+look|laser\s+cut|new\s+green\s+bird|burgundy\s+liner)\b/i)) {
+                    continue;
+                }
+                
+                // Skip linens and tablecloths
+                if (lowerDish.match(/\b(tablecloth|linen|napkin)\b/i)) {
+                    continue;
+                }
+                
+                // Skip flowers and centerpieces
+                if (lowerDish.match(/\b(flower|centerpiece)\b/i)) {
+                    continue;
+                }
+                
+                // Skip serving items and platters
+                if (lowerDish.match(/\b(platter|cake\s+platter|cut\s+up\s+cake|on\s+tables?)\b/i)) {
+                    continue;
+                }
+                
+                // Skip glassware
+                if (lowerDish.match(/\b(glass|glasses|martini\s+glass|flute\s+glass)\b/i)) {
+                    continue;
+                }
+                
+                // Skip administrative items
+                if (lowerDish.match(/\b(sales?\s+tax|tax|total|subtotal)\b/i)) {
+                    continue;
+                }
+                
+                // Skip if in ignore list (custom user items)
+                if (shouldIgnoreItem(dishName)) {
+                    continue;
+                }
+                
+                // If we got here, it's likely a real food item!
+                let status = 'Unknown';
+                if (hasCheckMark) status = 'Remained';
+                if (hasCrossMark) status = 'Finished';
+                
+                menuItems.push({
+                    dishName: dishName,
+                    status: status,
+                    amountRemained: amountRemained,
+                    category: currentCategory,
+                    reason: reason,
+                    notes: ''
+                });
             }
             
             return {
