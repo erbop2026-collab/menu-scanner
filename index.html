@@ -497,11 +497,11 @@
                         <label>Event Type (Affair)</label>
                         <select id="eventType">
                             <option value="">Select type...</option>
-                            <option value="Wedding">Wedding (×—×ª×•× ×”)</option>
-                            <option value="Bar Mitzvah">Bar Mitzvah (×‘×¨ ×ž×¦×•×•×”)</option>
-                            <option value="Sheva Brachot">Sheva Brachot (×©×‘×¢ ×‘×¨×›×•×ª)</option>
-                            <option value="Vort">Vort (×•×•×¨×˜)</option>
-                            <option value="Shabbat">Shabbat (×©×‘×ª)</option>
+                            <option value="Wedding">Wedding</option>
+                            <option value="Bar Mitzvah">Bar Mitzvah</option>
+                            <option value="Sheva Brachot">Sheva Brachot</option>
+                            <option value="Vort">Vort</option>
+                            <option value="Shabbat">Shabbat</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -509,8 +509,8 @@
                         <label>Hall Name</label>
                         <select id="hallName">
                             <option value="">Select hall...</option>
-                            <option value="Ateres Golda">Ateres Golda (×¢×˜×¨×ª ×’×•×œ×“×”)</option>
-                            <option value="Scharf">Scharf (×©××¨×£)</option>
+                            <option value="Ateres Golda">Ateres Golda</option>
+                            <option value="Scharf">Scharf</option>
                             <option value="LH">LH</option>
                         </select>
                     </div>
@@ -770,9 +770,11 @@
             document.getElementById('uploadCard').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
             document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('loadingText').textContent = 'Scanning menu with OCR...';
             hideMessages();
 
             try {
+                // Step 1: OCR with Tesseract
                 const worker = await Tesseract.createWorker({
                     logger: m => {
                         if (m.status === 'recognizing text') {
@@ -789,10 +791,23 @@
                 const { data: { text } } = await worker.recognize(imageFile);
                 await worker.terminate();
 
-                console.log('Extracted text:', text);
+                console.log('📄 OCR Extracted text:', text);
 
-                // Parse the extracted text with Ateres Golda specific logic
-                extractedData = parseAteresGoldaMenu(text);
+                // Step 2: Try Claude API for smart parsing
+                document.getElementById('loadingText').textContent = '🤖 Analyzing menu with AI...';
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('progressFill').textContent = 'AI Parsing...';
+                
+                try {
+                    extractedData = await parseWithClaudeAPI(text);
+                    console.log('✅ AI parsing successful!');
+                    showSuccess('🤖 AI successfully parsed the menu!');
+                } catch (apiError) {
+                    console.warn('AI parsing failed, using fallback:', apiError);
+                    document.getElementById('loadingText').textContent = 'Using standard parsing...';
+                    extractedData = parseAteresGoldaMenu(text);
+                }
+                
                 displayResults();
 
             } catch (error) {
@@ -802,6 +817,85 @@
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
+        }
+
+        async function parseWithClaudeAPI(ocrText) {
+            console.log('🤖 Sending to Claude API for smart parsing...');
+            
+            const prompt = `You are a catering menu data extractor for Ateres Golda catering hall.
+
+Extract menu data from this OCR text. The menu contains:
+- Event details (date, type, party name, size)
+- Food items (fish, chicken, soup, kugel, salads, desserts, etc.)
+- Non-food items to IGNORE: decorations, flowers, tablecloths, linens, platters, glasses, serving items, tax
+
+OCR Text:
+${ocrText}
+
+Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+{
+  "eventInfo": {
+    "date": "YYYY-MM-DD or MM/DD/YYYY format",
+    "eventType": "Wedding|Bar Mitzvah|Sheva Brachot|Vort|Shabbat|Aufruf",
+    "hallName": "Ateres Golda",
+    "eventSize": "number of guests",
+    "eventOwner": "party/family name"
+  },
+  "menuItems": [
+    {
+      "dishName": "name of food dish only",
+      "status": "Remained|Finished",
+      "amountRemained": "number if found",
+      "category": "FRIDAY NIGHT|KIDDISH|MEN|LADIES etc",
+      "reason": "didn't show|left over|too much etc if found",
+      "notes": ""
+    }
+  ]
+}
+
+Rules:
+1. Include ONLY actual FOOD items (fish, chicken, meat, kugel, salads, soups, desserts, drinks)
+2. EXCLUDE: decor, decorations, flowers, tablecloths, linens, napkins, platters, glasses, cake platters, cut up cake, utensils, sales tax, tax, serving items
+3. Extract amounts from numbers in boxes next to items
+4. Detect status: checkmark/V/✓ = Remained, X/✗ = Finished
+5. Look for reason phrases: "didn't show", "left over", "too much", "not fresh"
+6. Category should be the section header (FRIDAY NIGHT, KIDDISH, MEN-, LADIES-, etc)
+
+Be precise. Only include items people actually EAT.`;
+
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-20250514",
+                    max_tokens: 4000,
+                    messages: [
+                        { role: "user", content: prompt }
+                    ],
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('📦 Claude API response:', data);
+            
+            // Extract JSON from response
+            let jsonText = data.content[0].text.trim();
+            
+            // Remove markdown code blocks if present
+            jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            
+            const parsed = JSON.parse(jsonText);
+            
+            console.log('✅ Parsed data:', parsed);
+            console.log(`🍽️ Found ${parsed.menuItems.length} food items`);
+            
+            return parsed;
         }
 
         function parseAteresGoldaMenu(text) {
@@ -1062,17 +1156,17 @@
 
         function normalizeEventTypeForDropdown(type) {
             var t = (type || '').toLowerCase();
-            if (t.includes('wedding') || t.includes('×—×ª×•× ×”')) return 'Wedding';
-            if (t.includes('bar') || t.includes('×‘×¨ ×ž×¦×•×•×”')) return 'Bar Mitzvah';
-            if (t.includes('sheva') || t.includes('×©×‘×¢ ×‘×¨×›×•×ª')) return 'Sheva Brachot';
-            if (t.includes('vort') || t.includes('×•×•×¨×˜')) return 'Vort';
-            if (t.includes('shabbat') || t.includes('×©×‘×ª')) return 'Shabbat';
+            if (t.includes('wedding')) return 'Wedding';
+            if (t.includes('bar mitzvah') || t.includes('bar')) return 'Bar Mitzvah';
+            if (t.includes('sheva')) return 'Sheva Brachot';
+            if (t.includes('vort')) return 'Vort';
+            if (t.includes('shabbat')) return 'Shabbat';
             return '';
         }
 
         function normalizeHallNameForDropdown(hall) {
             var h = (hall || '').toLowerCase();
-            if (h.includes('ateres') || h.includes('golda') || h.includes('×¢×˜×¨×ª')) return 'Ateres Golda';
+            if (h.includes('ateres') || h.includes('golda')) return 'Ateres Golda';
             if (h.includes('scharf') || h.includes('×©××¨×£')) return 'Scharf';
             if (h.includes('lh')) return 'LH';
             return '';
