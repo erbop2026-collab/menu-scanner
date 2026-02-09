@@ -24,7 +24,6 @@
             --success-bg: #e8f5ec;
             --error: #c0392b;
             --error-bg: #fdf0ee;
-            --remained: #e8c44a;
             --remained-bg: #fdf8e8;
             --finished: #3a7d4f;
             --finished-bg: #e8f5ec;
@@ -34,9 +33,7 @@
             --radius: 12px;
             --radius-sm: 8px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'DM Sans', sans-serif;
             background: var(--bg);
@@ -44,11 +41,9 @@
             color: var(--text);
             -webkit-font-smoothing: antialiased;
         }
-
-        /* ── Header ── */
         .top-bar {
             background: var(--primary);
-            padding: 20px 24px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -56,598 +51,167 @@
             top: 0;
             z-index: 100;
         }
-        .top-bar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .top-bar-brand { display: flex; align-items: center; gap: 12px; }
         .top-bar-logo {
-            width: 36px;
-            height: 36px;
+            width: 36px; height: 36px;
             background: var(--accent);
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: white;
-            font-family: 'Playfair Display', serif;
-            font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: white;
+            font-family: 'Playfair Display', serif; font-weight: 700;
         }
-        .top-bar h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 20px;
-            color: white;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-        }
-        .top-bar-subtitle {
-            font-size: 11px;
-            color: var(--accent-light);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            font-weight: 500;
-        }
-        .settings-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-size: 18px;
-        }
-        .settings-icon:hover { background: rgba(255,255,255,0.2); }
-        .sheet-link-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            border-radius: 10px;
+        .top-bar h1 { font-family: 'Playfair Display', serif; font-size: 20px; color: white; font-weight: 600; }
+        .top-bar-subtitle { font-size: 11px; color: var(--accent-light); letter-spacing: 1.5px; text-transform: uppercase; }
+        .top-bar-actions { display: flex; gap: 8px; align-items: center; }
+        .icon-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 10px;
             background: rgba(255,255,255,0.12);
             border: 1px solid rgba(255,255,255,0.18);
-            color: white;
-            font-size: 13px;
-            font-weight: 600;
+            color: white; font-size: 13px; font-weight: 600;
             font-family: 'DM Sans', sans-serif;
-            text-decoration: none;
-            transition: background 0.2s;
-            white-space: nowrap;
+            text-decoration: none; cursor: pointer;
+            transition: background 0.2s; white-space: nowrap;
         }
-        .sheet-link-btn:hover { background: rgba(255,255,255,0.22); }
-
-        /* ── Container ── */
-        .container {
-            max-width: 640px;
-            margin: 0 auto;
-            padding: 20px 16px 100px;
-        }
-
-        /* ── Alerts ── */
+        .icon-btn:hover { background: rgba(255,255,255,0.22); }
+        .icon-btn.round { padding: 8px 12px; }
+        .container { max-width: 640px; margin: 0 auto; padding: 20px 16px 100px; }
         .alert {
-            padding: 14px 18px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 16px;
-            font-size: 14px;
-            font-weight: 500;
-            display: none;
-            animation: slideDown 0.3s ease;
+            padding: 14px 18px; border-radius: var(--radius-sm);
+            margin-bottom: 16px; font-size: 14px; font-weight: 500;
+            display: none; animation: slideDown 0.3s ease;
         }
         .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #b8dcc2; }
         .alert-error { background: var(--error-bg); color: var(--error); border: 1px solid #f0c6c0; }
         @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-
-        /* ── Card ── */
         .card {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 24px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border);
+            background: var(--card); border-radius: var(--radius);
+            padding: 24px; margin-bottom: 16px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
         }
         .card-title {
             font-family: 'Playfair Display', serif;
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 18px;
+            font-size: 20px; font-weight: 600; color: var(--primary); margin-bottom: 18px;
         }
-
-        /* ── Upload Section ── */
-        .upload-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .upload-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .upload-btn {
-            position: relative;
-            padding: 28px 16px;
-            background: var(--bg);
-            border: 2px dashed var(--border);
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: all 0.25s;
-            text-align: center;
+            display: block; padding: 28px 16px;
+            background: var(--bg); border: 2px dashed var(--border);
+            border-radius: var(--radius); cursor: pointer;
+            transition: all 0.25s; text-align: center;
         }
-        .upload-btn:hover {
-            border-color: var(--accent);
-            background: #faf6f2;
-        }
+        .upload-btn:hover { border-color: var(--accent); background: #faf6f2; }
         .upload-btn:active { transform: scale(0.98); }
-        .upload-btn-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .upload-btn-label {
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--primary);
-        }
-        .upload-btn-hint {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        /* ── Preview ── */
-        .preview-section {
-            display: none;
-            margin-top: 16px;
-            animation: slideDown 0.3s ease;
-        }
+        .upload-btn-icon { font-size: 32px; margin-bottom: 8px; display: block; pointer-events: none; }
+        .upload-btn-label { font-weight: 600; font-size: 14px; color: var(--primary); pointer-events: none; }
+        .upload-btn-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; pointer-events: none; }
+        .preview-section { display: none; margin-top: 16px; }
         .preview-section.show { display: block; }
         .preview-wrapper {
-            position: relative;
             border-radius: var(--radius);
-            overflow: hidden;
-            background: #f0ece7;
-            border: 1px solid var(--border);
+            overflow: hidden; background: #f0ece7; border: 1px solid var(--border);
         }
-        .preview-wrapper img,
-        .preview-wrapper canvas {
-            width: 100%;
-            display: block;
-            border-radius: var(--radius);
-        }
+        .preview-wrapper canvas { width: 100%; display: block; }
         .preview-file-name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            background: var(--bg);
-            border-radius: var(--radius-sm);
-            margin-top: 10px;
-            font-size: 13px;
-            color: var(--text-muted);
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; background: var(--bg);
+            border-radius: var(--radius-sm); margin-top: 10px;
+            font-size: 13px; color: var(--text-muted);
         }
-
-        /* ── Alignment Tools ── */
-        .align-tools {
-            display: none;
-            margin-top: 12px;
-            padding: 14px;
-            background: #faf8f5;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-        }
+        .align-tools { display: none; margin-top: 12px; padding: 14px; background: #faf8f5; border-radius: var(--radius-sm); border: 1px solid var(--border); }
         .align-tools.show { display: block; }
-        .align-tools-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .align-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-        .align-row label {
-            font-size: 12px;
-            color: var(--text-muted);
-            width: 70px;
-            flex-shrink: 0;
-        }
-        .align-row input[type="range"] {
-            flex: 1;
-            accent-color: var(--accent);
-            height: 4px;
-        }
-        .align-row .align-val {
-            font-size: 12px;
-            font-weight: 600;
-            width: 40px;
-            text-align: right;
-            color: var(--primary);
-        }
-        .align-btns {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
+        .align-tools-title { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 10px; }
+        .align-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .align-row label { font-size: 12px; color: var(--text-muted); width: 70px; flex-shrink: 0; }
+        .align-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+        .align-row .align-val { font-size: 12px; font-weight: 600; width: 40px; text-align: right; color: var(--primary); }
+        .align-btns { display: flex; gap: 8px; margin-top: 10px; }
         .align-btns button {
-            flex: 1;
-            padding: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-            cursor: pointer;
-            transition: all 0.2s;
+            flex: 1; padding: 8px; font-size: 12px; font-weight: 600;
+            border-radius: var(--radius-sm); border: 1px solid var(--border);
+            cursor: pointer; font-family: 'DM Sans', sans-serif;
         }
-        .btn-auto-align {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary) !important;
-        }
-        .btn-auto-align:hover { background: var(--primary-light); }
-        .btn-reset-align {
-            background: white;
-            color: var(--text);
-        }
-        .btn-reset-align:hover { background: var(--bg); }
-
-        /* ── Primary Button ── */
+        .btn-auto { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-reset { background: white; color: var(--text); }
         .btn-primary {
-            width: 100%;
-            padding: 16px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 15px;
-            font-weight: 700;
-            font-family: 'DM Sans', sans-serif;
-            cursor: pointer;
-            transition: all 0.25s;
-            margin-top: 16px;
-            letter-spacing: 0.3px;
+            display: block; width: 100%; padding: 16px;
+            background: var(--accent); color: white; border: none;
+            border-radius: var(--radius); font-size: 15px; font-weight: 700;
+            font-family: 'DM Sans', sans-serif; cursor: pointer;
+            margin-top: 16px; text-align: center; text-decoration: none;
         }
-        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
-        .btn-primary:active { transform: translateY(0); }
-        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-        .btn-primary.btn-success { background: var(--success); }
-        .btn-primary.btn-success:hover { background: #2e6b40; }
-        .btn-primary.btn-sheet { background: #2c5f8a; }
-        .btn-primary.btn-sheet:hover { background: #1e4a6e; }
-
-        /* ── Loading ── */
-        .loading-section {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
-        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-green { background: var(--success); }
+        .btn-green:hover { background: #2e6b40; }
+        .btn-blue { background: #2c5f8a; }
+        .btn-blue:hover { background: #1e4a6e; }
+        .loading-section { display: none; text-align: center; padding: 40px 20px; }
         .loading-section.show { display: block; }
         .loader {
-            width: 48px;
-            height: 48px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 20px;
+            width: 48px; height: 48px;
+            border: 3px solid var(--border); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-text {
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--text);
-            margin-bottom: 16px;
-        }
-        .progress-track {
-            width: 100%;
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: var(--accent);
-            width: 0%;
-            border-radius: 3px;
-            transition: width 0.3s;
-        }
-        .progress-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 8px;
-        }
-
-        /* ── Results ── */
+        .loading-text { font-size: 15px; font-weight: 500; margin-bottom: 16px; }
+        .progress-track { width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; border-radius: 3px; transition: width 0.3s; }
+        .progress-label { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
         .results-section { display: none; }
-        .results-section.show { display: block; animation: slideDown 0.3s ease; }
-
-        /* ── Form Controls ── */
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .results-section.show { display: block; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-group { margin-bottom: 14px; }
-        .form-group.full { grid-column: 1 / -1; }
-        .form-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 6px;
-        }
+        .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
         .form-input {
-            width: 100%;
-            padding: 11px 14px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            background: white;
-            transition: border-color 0.2s;
+            width: 100%; padding: 11px 14px;
+            border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 14px; font-family: 'DM Sans', sans-serif;
+            color: var(--text); background: white;
         }
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(200,149,108,0.12);
-        }
-
-        /* ── Menu Items ── */
-        .menu-items-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 24px 0 14px;
-        }
-        .menu-items-header h3 {
-            font-family: 'Playfair Display', serif;
-            font-size: 18px;
-            color: var(--primary);
-        }
-        .items-count {
-            font-size: 12px;
-            background: var(--accent-light);
-            color: var(--accent-hover);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        .category-divider {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 18px 0 10px;
-        }
-        .category-divider::before,
-        .category-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-        .category-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            white-space: nowrap;
-        }
-
-        .menu-item {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px;
-            margin-bottom: 10px;
-            transition: box-shadow 0.2s;
-        }
-        .menu-item:hover { box-shadow: var(--shadow-sm); }
-        .menu-item-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        .dish-name {
-            font-weight: 600;
-            font-size: 15px;
-            color: var(--primary);
-            flex: 1;
-        }
-        .status-tag {
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .form-input:focus { outline: none; border-color: var(--accent); }
+        .menu-items-header { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 14px; }
+        .menu-items-header h3 { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--primary); }
+        .items-count { font-size: 12px; background: var(--accent-light); color: var(--accent-hover); padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+        .category-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
+        .category-divider::before, .category-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .category-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; }
+        .menu-item { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+        .menu-item-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .dish-name { font-weight: 600; font-size: 15px; color: var(--primary); flex: 1; }
+        .status-tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; }
         .status-tag.remained { background: var(--remained-bg); color: #8b6914; }
         .status-tag.finished { background: var(--finished-bg); color: var(--finished); }
         .status-tag.unknown { background: var(--bg); color: var(--text-muted); }
-
-        .menu-item-fields {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .mini-label {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 3px;
-            font-weight: 500;
-        }
-        .mini-input {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            transition: border-color 0.2s;
-        }
+        .menu-item-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .mini-label { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; font-weight: 500; }
+        .mini-input { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; }
         .mini-input:focus { outline: none; border-color: var(--accent); }
-        .mini-select {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            background: white;
-            cursor: pointer;
-        }
-        .mini-select:focus { outline: none; border-color: var(--accent); }
-
-        /* ── Modal ── */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            backdrop-filter: blur(4px);
-            overflow-y: auto;
-        }
-        .modal-overlay.show { display: block; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-        .modal {
-            background: var(--card);
-            max-width: 560px;
-            margin: 60px auto 40px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-        }
-        .modal-header {
-            background: var(--primary);
-            padding: 20px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .modal-header h2 {
-            font-family: 'Playfair Display', serif;
-            color: white;
-            font-size: 18px;
-        }
-        .modal-close {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .mini-select { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: white; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; }
+        .modal-overlay.show { display: block; }
+        .modal { background: var(--card); max-width: 560px; margin: 60px auto 40px; border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; }
+        .modal-header { background: var(--primary); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h2 { font-family: 'Playfair Display', serif; color: white; font-size: 18px; }
+        .modal-close { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .modal-body { padding: 24px; }
-        .modal-info {
-            padding: 14px;
-            background: #f0f7ff;
-            border-radius: var(--radius-sm);
-            border-left: 3px solid #4a90d9;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #3a6fa0;
-            line-height: 1.5;
-        }
+        .modal-info { padding: 14px; background: #f0f7ff; border-radius: var(--radius-sm); border-left: 3px solid #4a90d9; margin-bottom: 20px; font-size: 13px; color: #3a6fa0; line-height: 1.5; }
         .ignore-items { display: flex; flex-direction: column; gap: 6px; }
-        .ignore-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 14px;
-            background: var(--bg);
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-        }
-        .ignore-item-remove {
-            width: auto;
-            padding: 5px 14px;
-            background: var(--error);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-        }
-        .add-ignore-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
-        }
-        .add-ignore-row input {
-            flex: 1;
-            padding: 10px 14px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
-        }
-        .add-ignore-row input:focus { outline: none; border-color: var(--accent); }
-        .add-ignore-row button {
-            padding: 10px 20px;
-            background: var(--success);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            white-space: nowrap;
-        }
-        .btn-reset-modal {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 16px;
-            font-family: 'DM Sans', sans-serif;
-        }
-
-        /* ── Hidden file inputs ── */
-        input[type="file"] { display: none; }
-
-        /* ── Canvas hidden ── */
-        #alignCanvas { display: none; }
-
-        /* ── Responsive ── */
+        .ignore-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg); border-radius: var(--radius-sm); font-size: 14px; }
+        .ignore-item button { padding: 5px 14px; background: var(--error); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .add-ignore-row { display: flex; gap: 8px; margin-top: 16px; }
+        .add-ignore-row input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans', sans-serif; }
+        .add-ignore-row button { padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .btn-reset-modal { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; font-family: 'DM Sans', sans-serif; }
         @media (max-width: 480px) {
             .container { padding: 12px 10px 100px; }
             .card { padding: 18px; }
             .form-grid { grid-template-columns: 1fr; }
-            .menu-item-fields { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
 <body>
 
-<!-- ── Top Bar ── -->
 <div class="top-bar">
     <div class="top-bar-brand">
         <div class="top-bar-logo">AG</div>
@@ -656,101 +220,77 @@
             <div class="top-bar-subtitle">Ateres Golda</div>
         </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-        <a href="https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc" target="_blank" class="sheet-link-btn">
-            <span>📊</span> View Sheet
-        </a>
-        <div class="settings-icon" onclick="openSettings()">⚙</div>
+    <div class="top-bar-actions">
+        <a href="https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc" target="_blank" rel="noopener" class="icon-btn">📊 View Sheet</a>
+        <button type="button" class="icon-btn round" onclick="openSettings()">⚙</button>
     </div>
 </div>
 
 <div class="container">
-
-    <!-- Alerts -->
     <div class="alert alert-success" id="alertSuccess"></div>
     <div class="alert alert-error" id="alertError"></div>
 
-    <!-- ── Upload Card ── -->
     <div class="card" id="uploadCard">
         <div class="card-title">Scan Menu</div>
         <div class="upload-actions">
-            <label class="upload-btn" for="cameraInput">
+            <label class="upload-btn">
                 <span class="upload-btn-icon">📸</span>
                 <div class="upload-btn-label">Take Photo</div>
                 <div class="upload-btn-hint">Use camera</div>
+                <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this.files[0])">
             </label>
-            <label class="upload-btn" for="imageInput">
+            <label class="upload-btn">
                 <span class="upload-btn-icon">🖼️</span>
                 <div class="upload-btn-label">Upload Image</div>
                 <div class="upload-btn-hint">From gallery</div>
+                <input type="file" accept="image/*" style="display:none" onchange="handleFile(this.files[0])">
             </label>
         </div>
 
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleFile(this.files[0])">
-        <input type="file" id="imageInput" accept="image/*" onchange="handleFile(this.files[0])">
-
-        <!-- Preview -->
         <div class="preview-section" id="previewSection">
             <div class="preview-wrapper">
-                <img id="previewImage" style="display:none;">
                 <canvas id="previewCanvas"></canvas>
             </div>
-            <div class="preview-file-name" id="fileInfo">
+            <div class="preview-file-name">
                 <span>📎</span>
                 <span id="fileName">No file selected</span>
             </div>
-
-            <!-- Alignment Tools -->
             <div class="align-tools" id="alignTools">
                 <div class="align-tools-title">📐 Image Alignment</div>
                 <div class="align-row">
                     <label>Rotation</label>
-                    <input type="range" id="rotationSlider" min="-15" max="15" value="0" step="0.5" oninput="applyTransform()">
+                    <input type="range" id="rotationSlider" min="-15" max="15" value="0" step="0.5" oninput="drawPreview()">
                     <span class="align-val" id="rotationVal">0°</span>
                 </div>
                 <div class="align-row">
-                    <label>Perspective</label>
-                    <input type="range" id="perspectiveSlider" min="-30" max="30" value="0" step="1" oninput="applyTransform()">
-                    <span class="align-val" id="perspectiveVal">0</span>
-                </div>
-                <div class="align-row">
                     <label>Brightness</label>
-                    <input type="range" id="brightnessSlider" min="70" max="150" value="100" step="5" oninput="applyTransform()">
+                    <input type="range" id="brightnessSlider" min="70" max="150" value="100" step="5" oninput="drawPreview()">
                     <span class="align-val" id="brightnessVal">100%</span>
                 </div>
                 <div class="align-row">
                     <label>Contrast</label>
-                    <input type="range" id="contrastSlider" min="70" max="200" value="100" step="5" oninput="applyTransform()">
+                    <input type="range" id="contrastSlider" min="70" max="200" value="100" step="5" oninput="drawPreview()">
                     <span class="align-val" id="contrastVal">100%</span>
                 </div>
                 <div class="align-btns">
-                    <button class="btn-auto-align" onclick="autoAlign()">✨ Auto Enhance</button>
-                    <button class="btn-reset-align" onclick="resetTransform()">↺ Reset</button>
+                    <button type="button" class="btn-auto" onclick="autoAlign()">✨ Auto Enhance</button>
+                    <button type="button" class="btn-reset" onclick="resetTransform()">↺ Reset</button>
                 </div>
             </div>
         </div>
-
-        <button class="btn-primary" id="scanButton" style="display:none;" onclick="scanMenu()">
-            🔍 Scan &amp; Extract Menu
-        </button>
+        <button type="button" class="btn-primary" id="scanButton" style="display:none" onclick="scanMenu()">🔍 Scan &amp; Extract Menu</button>
     </div>
 
-    <!-- ── Loading ── -->
     <div class="loading-section" id="loadingSection">
         <div class="card">
             <div class="loader"></div>
             <div class="loading-text" id="loadingText">Scanning menu...</div>
-            <div class="progress-track">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <div class="progress-label" id="progressLabel">Initializing OCR engine...</div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-label" id="progressLabel">Initializing OCR...</div>
         </div>
     </div>
 
-    <!-- ── Results ── -->
     <div class="results-section" id="resultsSection">
-
-        <!-- Event Details -->
         <div class="card">
             <div class="card-title">Event Details</div>
             <div class="form-grid">
@@ -780,7 +320,7 @@
                         <option value="LH">LH</option>
                     </select>
                 </div>
-                <div class="form-group" id="hallSideGroup">
+                <div class="form-group">
                     <label class="form-label">Hall Side (Split)</label>
                     <select class="form-input" id="hallSide">
                         <option value="">Full Hall</option>
@@ -807,7 +347,6 @@
                         <option value="SD">SD (Saturday Day)</option>
                         <option value="Evening">Evening</option>
                         <option value="Afternoon">Afternoon</option>
-                        <option value="Other">Other</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -816,94 +355,64 @@
                 </div>
             </div>
         </div>
-
-        <!-- Menu Items -->
         <div class="card">
             <div class="menu-items-header">
                 <h3>Menu Items</h3>
                 <span class="items-count" id="itemsCount">0 items</span>
             </div>
             <div id="menuItemsList"></div>
-
-            <button class="btn-primary btn-success" onclick="saveToSheets()">
-                ✅ Save to Google Sheets
-            </button>
-            <a href="https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc" target="_blank" class="btn-primary btn-sheet" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
-                📊 Open Google Sheet
-            </a>
+            <button type="button" class="btn-primary btn-green" onclick="saveToSheets()">✅ Save to Google Sheets</button>
+            <a href="https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc" target="_blank" rel="noopener" class="btn-primary btn-blue">📊 Open Google Sheet</a>
         </div>
     </div>
 </div>
 
-<!-- ── Settings Modal ── -->
-<div class="modal-overlay" id="settingsModal">
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
     <div class="modal">
         <div class="modal-header">
             <h2>Settings</h2>
-            <button class="modal-close" onclick="closeSettings()">✕</button>
+            <button type="button" class="modal-close" onclick="closeSettings()">✕</button>
         </div>
         <div class="modal-body">
-            <div class="modal-info">
-                Items on this list are automatically filtered out during scanning — useful for decorations, serving items, taxes, and other non-food entries.
-            </div>
+            <div class="modal-info">Items on this list are automatically filtered out during scanning — useful for decorations, serving items, taxes, and non-food entries.</div>
             <div class="ignore-items" id="ignoreListContainer"></div>
             <div class="add-ignore-row">
-                <input type="text" id="newIgnoreItem" placeholder="Add item to ignore..." onkeypress="if(event.key==='Enter') addIgnoreItem()">
-                <button onclick="addIgnoreItem()">+ Add</button>
+                <input type="text" id="newIgnoreItem" placeholder="Add item to ignore..." onkeypress="if(event.key==='Enter')addIgnoreItem()">
+                <button type="button" onclick="addIgnoreItem()">+ Add</button>
             </div>
-            <button class="btn-reset-modal" onclick="resetIgnoreList()">↺ Reset to Defaults</button>
+            <button type="button" class="btn-reset-modal" onclick="resetIgnoreList()">↺ Reset to Defaults</button>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script>
-// ── State ──
-let extractedData = null;
-let imageFile = null;
-let originalImage = null; // HTMLImageElement for canvas
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw0MZG9bmL8qyrFho_vcBph3HmRquiUCf0QfzXOVPwMJkxO0ww-SNO8kAJHGidlz5zfOw/exec;
+var extractedData = null;
+var imageFile = null;
+var originalImage = null;
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwTfTpXjhYheiYVXclyVMxJRqC1lsVKcRa1tH7mNmBcjg8AeRlnYwwZBBcPAzHX1OqiYg/exec';
 
-// ── Default Ignore List ──
-const DEFAULT_IGNORE_LIST = [
+var DEFAULT_IGNORE = [
     'decor','tablecloth','linen','flowers','centerpiece',
     'burgundy look','olive green look','laser cut','new green bird','burgundy liner',
     'platters','cake platters','cut up cake','glasses','martini glasses',
     'flute glasses','plates','napkins','utensils','on tables',
     'friday night','men-','ladies-','kayx','some kids','people',
-    'sales tax','tax'
+    'sales tax','tax','indevidual'
 ];
+var ignoreList = JSON.parse(localStorage.getItem('ignoreList2')) || DEFAULT_IGNORE.slice();
 
-let ignoreList = JSON.parse(localStorage.getItem('ignoreList')) || [...DEFAULT_IGNORE_LIST];
-function saveIgnoreList() { localStorage.setItem('ignoreList', JSON.stringify(ignoreList)); }
-
-// ── Init ──
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('eventDate').valueAsDate = new Date();
 });
 
-// ── File Handling ──
 function handleFile(file) {
-    if (!file) { showAlert('error', 'No file selected.'); return; }
-    
-    // Accept any image type (some phones send weird MIME types)
-    if (!file.type.startsWith('image/') && !file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp|heic|heif)$/i)) {
-        showAlert('error', 'Please select an image file.');
-        return;
-    }
-
+    if (!file) return;
     imageFile = file;
     document.getElementById('fileName').textContent = file.name;
-
-    const reader = new FileReader();
-    reader.onerror = function() {
-        showAlert('error', 'Failed to read file. Please try again.');
-    };
+    var reader = new FileReader();
     reader.onload = function(e) {
-        const img = new Image();
-        img.onerror = function() {
-            showAlert('error', 'Failed to load image. Please try a different file.');
-        };
+        var img = new Image();
         img.onload = function() {
             originalImage = img;
             drawPreview();
@@ -912,638 +421,225 @@ function handleFile(file) {
             document.getElementById('scanButton').style.display = '';
             autoAlign();
         };
+        img.onerror = function() { showAlert('error', 'Could not load image.'); };
         img.src = e.target.result;
     };
+    reader.onerror = function() { showAlert('error', 'Could not read file.'); };
     reader.readAsDataURL(file);
-
-    // Reset inputs so same file can be selected again
-    document.getElementById('cameraInput').value = '';
-    document.getElementById('imageInput').value = '';
 }
 
-// ── Canvas Drawing / Alignment ──
 function drawPreview() {
     if (!originalImage) return;
-    const canvas = document.getElementById('previewCanvas');
-    const ctx = canvas.getContext('2d');
-
-    const rotation = parseFloat(document.getElementById('rotationSlider').value) || 0;
-    const perspective = parseFloat(document.getElementById('perspectiveSlider').value) || 0;
-    const brightness = parseFloat(document.getElementById('brightnessSlider').value) || 100;
-    const contrast = parseFloat(document.getElementById('contrastSlider').value) || 100;
-
-    // Set canvas size
-    const maxW = 600;
-    const scale = Math.min(1, maxW / originalImage.width);
-    const w = originalImage.width * scale;
-    const h = originalImage.height * scale;
-
-    // Add padding for rotation
-    const pad = 40;
+    var canvas = document.getElementById('previewCanvas');
+    var ctx = canvas.getContext('2d');
+    var rotation = parseFloat(document.getElementById('rotationSlider').value) || 0;
+    var brightness = parseFloat(document.getElementById('brightnessSlider').value) || 100;
+    var contrast = parseFloat(document.getElementById('contrastSlider').value) || 100;
+    var scale = Math.min(1, 600 / originalImage.width);
+    var w = originalImage.width * scale;
+    var h = originalImage.height * scale;
+    var pad = 30;
     canvas.width = w + pad * 2;
     canvas.height = h + pad * 2;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#f5f0eb';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Apply filters
-    ctx.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
-
+    ctx.filter = 'brightness(' + brightness + '%) contrast(' + contrast + '%)';
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
-
-    // Rotation
     ctx.rotate(rotation * Math.PI / 180);
-
-    // Simulate perspective with a slight vertical skew
-    if (perspective !== 0) {
-        const skew = perspective * 0.005;
-        ctx.transform(1, skew, 0, 1, 0, 0);
-    }
-
     ctx.drawImage(originalImage, -w / 2, -h / 2, w, h);
     ctx.restore();
     ctx.filter = 'none';
-
-    // Update labels
-    document.getElementById('rotationVal').textContent = rotation + '°';
-    document.getElementById('perspectiveVal').textContent = perspective;
+    document.getElementById('rotationVal').textContent = rotation + '\u00B0';
     document.getElementById('brightnessVal').textContent = brightness + '%';
     document.getElementById('contrastVal').textContent = contrast + '%';
 }
 
-function applyTransform() { drawPreview(); }
-
-function resetTransform() {
-    document.getElementById('rotationSlider').value = 0;
-    document.getElementById('perspectiveSlider').value = 0;
-    document.getElementById('brightnessSlider').value = 100;
-    document.getElementById('contrastSlider').value = 100;
-    drawPreview();
-}
-
 function autoAlign() {
-    // Smart enhance: boost brightness and contrast for better OCR
     document.getElementById('brightnessSlider').value = 115;
     document.getElementById('contrastSlider').value = 140;
     document.getElementById('rotationSlider').value = 0;
-    document.getElementById('perspectiveSlider').value = 0;
     drawPreview();
-    showAlert('success', 'Image enhanced for better scan results.');
 }
 
-function getProcessedImageData() {
-    // Return the canvas as a blob for Tesseract
-    const canvas = document.getElementById('previewCanvas');
-    return new Promise(resolve => {
-        canvas.toBlob(blob => resolve(blob), 'image/png');
-    });
+function resetTransform() {
+    document.getElementById('brightnessSlider').value = 100;
+    document.getElementById('contrastSlider').value = 100;
+    document.getElementById('rotationSlider').value = 0;
+    drawPreview();
 }
 
-// ── OCR / Scan ──
-async function scanMenu() {
-    if (!originalImage) { showAlert('error', 'Please select an image first.'); return; }
-
+function scanMenu() {
+    if (!originalImage) { showAlert('error', 'Select an image first.'); return; }
     document.getElementById('uploadCard').style.display = 'none';
     document.getElementById('loadingSection').classList.add('show');
     hideAlerts();
-
-    try {
-        // Use the processed canvas image
-        const processedBlob = await getProcessedImageData();
-
-        const worker = await Tesseract.createWorker({
-            logger: m => {
+    var canvas = document.getElementById('previewCanvas');
+    canvas.toBlob(function(blob) {
+        Tesseract.createWorker({
+            logger: function(m) {
                 if (m.status === 'recognizing text') {
-                    const pct = Math.round(m.progress * 100);
+                    var pct = Math.round(m.progress * 100);
                     document.getElementById('progressFill').style.width = pct + '%';
-                    document.getElementById('progressLabel').textContent = `Recognizing text... ${pct}%`;
-                } else if (m.status === 'loading language traineddata') {
-                    document.getElementById('progressLabel').textContent = 'Loading language data...';
+                    document.getElementById('progressLabel').textContent = 'Recognizing... ' + pct + '%';
                 } else {
                     document.getElementById('progressLabel').textContent = m.status || 'Processing...';
                 }
             }
+        }).then(function(worker) {
+            return worker.loadLanguage('eng').then(function() {
+                return worker.initialize('eng');
+            }).then(function() {
+                return worker.recognize(blob);
+            }).then(function(result) {
+                worker.terminate();
+                console.log('OCR Result:\n', result.data.text);
+                extractedData = parseMenu(result.data.text);
+                displayResults();
+                document.getElementById('loadingSection').classList.remove('show');
+            });
+        }).catch(function(err) {
+            console.error(err);
+            showAlert('error', 'Scan failed. Try a clearer image.');
+            document.getElementById('uploadCard').style.display = '';
+            document.getElementById('loadingSection').classList.remove('show');
         });
-
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
-
-        const { data: { text } } = await worker.recognize(processedBlob);
-        await worker.terminate();
-
-        console.log('OCR Output:\n', text);
-        extractedData = parseMenu(text);
-        displayResults();
-
-    } catch (err) {
-        console.error('Scan error:', err);
-        showAlert('error', 'Failed to scan. Please try a clearer image.');
-        document.getElementById('uploadCard').style.display = '';
-    } finally {
-        document.getElementById('loadingSection').classList.remove('show');
-    }
+    }, 'image/png');
 }
 
-// ── Menu Parser ──
 function parseMenu(text) {
-    const raw = text;
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    const fullText = lines.join(' ').toLowerCase();
+    var raw = text;
+    var lines = text.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.length>0});
+    var fullText = lines.join(' ').toLowerCase();
+    var info = {date:'',eventType:'',hallName:'',eventSize:'',eventOwner:'',startTime:'',phone:''};
 
-    const info = { date: '', eventType: '', hallName: '', eventSize: '', eventOwner: '', startTime: '', phone: '' };
+    if (fullText.includes('ateres') || fullText.includes('golda')) info.hallName = 'Ateres Golda';
+    else if (fullText.includes('scharf')) info.hallName = 'Scharf';
+    else if (/\blh\b/.test(fullText)) info.hallName = 'LH';
+    else info.hallName = 'Ateres Golda';
 
-    // ══════════════════════════════════════
-    // 1. HALL NAME DETECTION
-    // ══════════════════════════════════════
-    if (fullText.includes('ateres') || fullText.includes('golda')) {
-        info.hallName = 'Ateres Golda';
-    } else if (fullText.includes('scharf')) {
-        info.hallName = 'Scharf';
-    } else if (/\blh\b/.test(fullText)) {
-        info.hallName = 'LH';
-    } else {
-        info.hallName = 'Ateres Golda'; // default
-    }
-
-    // ══════════════════════════════════════
-    // 1b. START TIME DETECTION (FN, SN, SD, etc.)
-    // ══════════════════════════════════════
     if (/\bFN\b/.test(raw)) info.startTime = 'FN';
     else if (/\bSN\b/.test(raw)) info.startTime = 'SN';
     else if (/\bSD\b/.test(raw)) info.startTime = 'SD';
 
-    // ══════════════════════════════════════
-    // 1c. PHONE NUMBER DETECTION
-    // ══════════════════════════════════════
-    const phoneMatch = raw.match(/(\d{3}[\-\s\.]\d{3}[\-\s\.]\d{2,4})/);
+    var phoneMatch = raw.match(/(\d{3}[\-\s\.]\d{3}[\-\s\.]\d{2,4})/);
     if (phoneMatch) info.phone = phoneMatch[1];
 
-    // ══════════════════════════════════════
-    // 2. DATE DETECTION — find ANY date in the entire text
-    // ══════════════════════════════════════
-    const allDates = raw.match(/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/g);
-    if (allDates && allDates.length > 0) {
-        info.date = convertDate(allDates[0]);
-    }
+    var allDates = raw.match(/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/g);
+    if (allDates) info.date = convertDate(allDates[0]);
 
-    // ══════════════════════════════════════
-    // 3. EVENT TYPE (Affair) DETECTION
-    // ══════════════════════════════════════
-    const eventTypes = [
-        { keywords: ['aufruf', 'aufrut', 'aufru'], value: 'Aufruf' },
-        { keywords: ['wedding', 'chasuna', 'chasunah', 'חתונה'], value: 'Wedding' },
-        { keywords: ['bar mitzvah', 'bar mitzva', 'bar mitzwah', 'בר מצוה'], value: 'Bar Mitzvah' },
-        { keywords: ['sheva brachot', 'sheva brachos', 'sheva brochot', 'שבע ברכות'], value: 'Sheva Brachot' },
-        { keywords: ['vort', 'ווארט'], value: 'Vort' },
-        { keywords: ['shabbat', 'shabbos', 'שבת'], value: 'Shabbat' },
-        { keywords: ['kiddush', 'kiddish'], value: 'Shabbat' },
+    var typeMap = [
+        {kw:['aufruf','aufrut'],val:'Aufruf'},
+        {kw:['wedding','chasuna'],val:'Wedding'},
+        {kw:['bar mitzvah','bar mitzva'],val:'Bar Mitzvah'},
+        {kw:['sheva brachot','sheva brachos'],val:'Sheva Brachot'},
+        {kw:['vort'],val:'Vort'},
+        {kw:['shabbat','shabbos','kiddush','kiddish'],val:'Shabbat'}
     ];
-
-    // First scan entire text for event type keywords
-    for (const et of eventTypes) {
-        if (et.keywords.some(kw => fullText.includes(kw))) {
-            info.eventType = et.value;
-            break;
+    for (var t=0;t<typeMap.length;t++){
+        for (var k=0;k<typeMap[t].kw.length;k++){
+            if (fullText.includes(typeMap[t].kw[k])){info.eventType=typeMap[t].val;break;}
         }
+        if(info.eventType)break;
     }
 
-    // Also check for "FN" = Friday Night = Shabbat
-    if (fullText.includes(' fn') || fullText.includes('\tfn') || /\bfn\b/i.test(raw)) {
-        if (!info.eventType) info.eventType = 'Shabbat';
+    for (var i=0;i<Math.min(25,lines.length);i++){
+        var line=lines[i]; var low=line.toLowerCase();
+        if (low.includes('party') && (low.includes('name')||low.includes('neme'))){
+            var after=line.split(/party\s*n[ae]me[s]?\s*/i)[1];
+            if(after){var cl=after.replace(/[^a-zA-Z\s\-']/g,'').trim();if(cl.length>=2&&cl.length<40)info.eventOwner=cl;}
+            if(!info.eventOwner){for(var j=1;j<=3&&i+j<lines.length;j++){var nx=lines[i+j].trim();if(nx.length>=2&&nx.length<40&&/^[A-Z]/.test(nx)&&!/\d{3}/.test(nx)&&!nx.toLowerCase().includes('menu')){info.eventOwner=nx.replace(/[^a-zA-Z\s\-']/g,'').trim();break;}}}
+        }
+        if(low.includes('customer')||low.includes('ustomer')){var np=line.split(/[,\/]/)[0].replace(/customer|ustomer|telephone/gi,'').replace(/[^a-zA-Z\s\-']/g,'').trim();if(np.length>=2&&np.length<40&&!info.eventOwner)info.eventOwner=np;}
     }
 
-    // Check lines near "Affair" label — OCR might put type in adjacent cell/line
-    for (let i = 0; i < Math.min(20, lines.length); i++) {
-        const low = lines[i].toLowerCase();
-        if (low.includes('affair')) {
-            // Check same line: split by spaces/tabs and look for type word
-            const parts = lines[i].split(/\s{2,}|\t|[|]/);
-            for (const p of parts) {
-                const pt = p.trim().toLowerCase();
-                for (const et of eventTypes) {
-                    if (et.keywords.some(kw => pt.includes(kw))) {
-                        info.eventType = et.value;
-                    }
-                }
-            }
-            // Check next 3 lines
-            for (let j = 1; j <= 3 && i + j < lines.length; j++) {
-                const next = lines[i + j].trim();
-                const nextLow = next.toLowerCase();
-                for (const et of eventTypes) {
-                    if (et.keywords.some(kw => nextLow.includes(kw))) {
-                        info.eventType = et.value;
-                    }
-                }
-                // Accept short capitalized word as type (e.g., "Aufruf" on its own line)
-                if (!info.eventType && next.length > 2 && next.length < 25 && /^[A-Z]/.test(next) && !/\d{2}/.test(next) && !nextLow.includes('event') && !nextLow.includes('date') && !nextLow.includes('ball') && !nextLow.includes('room') && !nextLow.includes('start') && !nextLow.includes('party') && !nextLow.includes('menu')) {
-                    info.eventType = next;
-                }
-            }
-        }
+    var gm=raw.match(/(\d{1,3})\s*[-\u2013]\s*(\d{1,3})\s*(people|person|guest)?/i);
+    if(gm) info.eventSize=gm[1]+'-'+gm[2];
+
+    var menuItems=[];var currentCat='';var inMenu=false;
+    var skipRe=/^(Ateres|Golda|Menu$|Affair|Event\s*Date|Ball\s*Room|Start\s*Time|Customer|Telephone|Party\s*N|Additional|Qty$|FN$)/i;
+
+    for(var i=0;i<lines.length;i++){
+        var line=lines[i];var low=line.toLowerCase();
+        if(/^MENU$/i.test(line.trim())){inMenu=true;continue;}
+        if(/^(FRIDAY\s*NIGHT|KIDDISH|KIDDUSH|MEN[\s\-\u2013]|LADIES[\s\-\u2013]|WOMEN[\s\-\u2013]|KAYX|DESSERT)/i.test(line)){currentCat=line.replace(/[\d\-\u2013]+$/g,'').trim();inMenu=true;continue;}
+        if(skipRe.test(line))continue;
+        if(line.length<3||/^\d{1,3}$/.test(line))continue;
+        if(/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(line))continue;
+        if(!inMenu&&i<10)continue;
+        if(/\d{3}[\-\s]\d{3}[\-\s]\d{2}/.test(line))continue;
+
+        var hasCheck=/[\u2611\u2713\u2714\u2705]/.test(line);
+        var hasCross=/[\u2612\u2717\u2718\u274C]/.test(line);
+        var dishName=line.replace(/[\u2611\u2713\u2714\u2612\u2717\u2718\u274C\u2705\u2B1C\u2B1B]/g,'').replace(/^\s*[-\u2022*]\s*/,'').trim();
+
+        var amount='';
+        var numMatch=dishName.match(/\s+(\d{1,3})\s*$/);
+        if(numMatch&&parseInt(numMatch[1])<=500){amount=numMatch[1];dishName=dishName.replace(numMatch[0],'').trim();}
+        if(isIgnored(dishName))continue;
+        if(dishName.length<3||/^[\d\s\-\.\/]+$/.test(dishName))continue;
+
+        var status='Unknown';
+        if(hasCheck)status='Remained';
+        if(hasCross)status='Finished';
+        menuItems.push({dishName:dishName,status:status,amountRemained:amount,category:currentCat,reason:'',notes:''});
     }
-
-    // ══════════════════════════════════════
-    // 4. PARTY NAME / EVENT OWNER
-    // ══════════════════════════════════════
-    for (let i = 0; i < Math.min(25, lines.length); i++) {
-        const line = lines[i];
-        const low = line.toLowerCase();
-
-        if (low.includes('party') && low.includes('name')) {
-            // Try same line — everything after "party names"
-            const after = line.split(/party\s*names?\s*/i)[1];
-            if (after) {
-                const cleaned = after.replace(/[^a-zA-Z\s\-']/g, '').trim();
-                if (cleaned.length >= 2 && cleaned.length < 40) {
-                    info.eventOwner = cleaned;
-                }
-            }
-            // Try next lines
-            if (!info.eventOwner) {
-                for (let j = 1; j <= 3 && i + j < lines.length; j++) {
-                    const next = lines[i + j].trim();
-                    // A name: starts with capital, no long numbers, reasonable length
-                    if (next.length >= 2 && next.length < 40 && /^[A-Z]/.test(next) && !/\d{3}/.test(next) && !next.toLowerCase().includes('menu') && !next.toLowerCase().includes('additional')) {
-                        info.eventOwner = next.replace(/[^a-zA-Z\s\-']/g, '').trim();
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Also detect "Customer" field
-        if (low.includes('customer') || low.includes('telephone')) {
-            const namePart = line.split(/[\/,]/)[0].replace(/customer|telephone/gi, '').trim();
-            if (namePart.length >= 2 && namePart.length < 40 && !info.eventOwner) {
-                info.eventOwner = namePart.replace(/[^a-zA-Z\s\-']/g, '').trim();
-            }
-        }
-    }
-
-    // ══════════════════════════════════════
-    // 5. GUEST COUNT / EVENT SIZE
-    // ══════════════════════════════════════
-    // Pattern: "25-30 People" or "25 - 30" or "175" near "people/guests/men/ladies"
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const low = line.toLowerCase();
-
-        // "25-30 People"
-        const rangeMatch = line.match(/(\d{1,3})\s*[-–—]\s*(\d{1,3})\s*(people|person|guest|ppl)?/i);
-        if (rangeMatch && !info.eventSize) {
-            info.eventSize = rangeMatch[1] + '-' + rangeMatch[2];
-        }
-
-        // "MEN- On Tables 175" or "LADIES- 75"
-        const sectionCount = line.match(/(?:MEN|LADIES|WOMEN)\s*[-–—]?\s*(?:On\s*Tables\s*)?(\d{2,3})/i);
-        if (sectionCount) {
-            // Store individual section counts but don't override main size
-        }
-
-        // Standalone number on a line with "people" context
-        if (low.includes('people') || low.includes('person') || low.includes('guest')) {
-            const numInLine = line.match(/(\d{1,3})/);
-            if (numInLine && !info.eventSize) {
-                info.eventSize = numInLine[1];
-            }
-        }
-    }
-
-    // ══════════════════════════════════════
-    // 6. PARSE MENU ITEMS
-    // ══════════════════════════════════════
-    const menuItems = [];
-    let currentCategory = '';
-    let inMenuSection = false;
-
-    // Header lines to skip
-    const skipPatterns = /^(Ateres|Golda|Menu$|Affair|Event\s*Date|Ball\s*Room|Start\s*Time|Customer|Telephone|Party\s*Name|Additional\s*Information|Qty$|FN$)/i;
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const low = line.toLowerCase();
-
-        // Detect we're in the menu section
-        if (/^MENU$/i.test(line.trim())) {
-            inMenuSection = true;
-            continue;
-        }
-
-        // Detect section headers / categories
-        if (/^(FRIDAY\s*NIGHT|KIDDISH|KIDDUSH|MEN[\s\-–]|LADIES[\s\-–]|WOMEN[\s\-–]|KAYX|DESSERT)/i.test(line)) {
-            let cat = line.replace(/\d+$/g, '').replace(/[-–—]+\s*$/, '').trim();
-            currentCategory = cat;
-            inMenuSection = true;
-            continue;
-        }
-
-        // Skip header/info lines
-        if (skipPatterns.test(line)) continue;
-        if (line.length < 3) continue;
-        if (/^\d{1,3}$/.test(line)) continue;
-
-        // Skip date lines
-        if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(line)) continue;
-
-        // Skip lines that are clearly part of the header area (before MENU)
-        if (!inMenuSection && i < 10) continue;
-
-        // Check for check/cross marks — ✓/✔/☑ = Remained, ✗/✘/☒/❌ = Finished
-        const hasCheck = /[☑✓✔✅]/.test(line) || /\bV\b/.test(line);
-        const hasCross = /[☒✗✘❌]/.test(line) || /\bX\b/.test(line);
-
-        // Clean dish name
-        let dishName = line
-            .replace(/[☑✓✔☒✗✘❌✅⬜⬛]/g, '')
-            .replace(/^\s*[VX]\s+/i, '')
-            .replace(/^\s*[-•*]\s*/, '')
-            .trim();
-
-        // Extract trailing number (amount remained)
-        let amount = '';
-        const numMatch = dishName.match(/\s+(\d{1,3})\s*$/);
-        if (numMatch) {
-            const n = parseInt(numMatch[1]);
-            // Only treat as amount if reasonable (not a year or phone fragment)
-            if (n <= 500) {
-                amount = numMatch[1];
-                dishName = dishName.replace(numMatch[0], '').trim();
-            }
-        }
-
-        // Filter out non-food items using ignore list
-        if (shouldIgnoreItem(dishName)) continue;
-
-        // Must be reasonable
-        if (dishName.length < 3) continue;
-        if (/^[\d\s\-\.\/]+$/.test(dishName)) continue;
-        // Skip phone numbers
-        if (/\d{3}[\-\s]\d{3}[\-\s]\d{2,4}/.test(dishName)) continue;
-
-        let status = 'Unknown';
-        if (hasCheck) status = 'Remained';
-        if (hasCross) status = 'Finished';
-
-        menuItems.push({
-            dishName, status, amountRemained: amount,
-            category: currentCategory, reason: '', notes: ''
-        });
-    }
-
-    console.log('Parsed info:', info);
-    console.log('Parsed items:', menuItems.length);
-
-    return { eventInfo: info, menuItems };
+    return {eventInfo:info,menuItems:menuItems};
 }
 
-function shouldIgnoreItem(name) {
-    const low = name.toLowerCase();
-    return ignoreList.some(kw => low.includes(kw));
-}
+function isIgnored(name){var low=name.toLowerCase();for(var i=0;i<ignoreList.length;i++){if(low.includes(ignoreList[i]))return true;}return false;}
 
-function convertDate(dateStr) {
-    try {
-        const parts = dateStr.split(/[\/\-\.]/);
-        if (parts.length === 3) {
-            const m = parts[0].padStart(2, '0');
-            const d = parts[1].padStart(2, '0');
-            let y = parts[2];
-            if (y.length === 2) y = '20' + y;
-            return `${y}-${m}-${d}`;
-        }
-    } catch (e) {}
-    return dateStr;
-}
+function convertDate(d){try{var p=d.split(/[\/\-\.]/);if(p.length===3){var m=p[0].length<2?'0'+p[0]:p[0];var day=p[1].length<2?'0'+p[1]:p[1];var y=p[2];if(y.length===2)y='20'+y;return y+'-'+m+'-'+day;}}catch(e){}return d;}
 
-// ── Display Results ──
-function displayResults() {
-    const info = extractedData.eventInfo;
+function displayResults(){
+    var info=extractedData.eventInfo;
+    if(info.date)document.getElementById('eventDate').value=info.date;
+    if(info.eventType)document.getElementById('eventType').value=info.eventType;
+    if(info.hallName)document.getElementById('hallName').value=info.hallName;
+    document.getElementById('eventSize').value=info.eventSize||'';
+    document.getElementById('eventOwner').value=info.eventOwner||'';
+    if(info.startTime)document.getElementById('startTime').value=info.startTime;
+    document.getElementById('eventPhone').value=info.phone||'';
 
-    if (info.date) document.getElementById('eventDate').value = info.date;
-    if (info.eventType) {
-        const sel = document.getElementById('eventType');
-        // Try exact match first
-        for (let opt of sel.options) {
-            if (opt.value.toLowerCase() === info.eventType.toLowerCase()) {
-                sel.value = opt.value;
-                break;
-            }
-        }
-        // Try partial
-        if (!sel.value) {
-            sel.value = normalizeType(info.eventType);
-        }
-    }
-    if (info.hallName) {
-        document.getElementById('hallName').value = normalizeHall(info.hallName);
-    }
-    document.getElementById('eventSize').value = info.eventSize || '';
-    document.getElementById('eventOwner').value = info.eventOwner || '';
-    if (info.startTime) document.getElementById('startTime').value = info.startTime;
-    document.getElementById('eventPhone').value = info.phone || '';
+    var list=document.getElementById('menuItemsList');list.innerHTML='';
+    var items=extractedData.menuItems;
+    document.getElementById('itemsCount').textContent=items.length+' item'+(items.length!==1?'s':'');
+    if(items.length===0){list.innerHTML='<p style="text-align:center;color:#999;padding:20px">No menu items detected.</p>';}
 
-    const list = document.getElementById('menuItemsList');
-    list.innerHTML = '';
-    const items = extractedData.menuItems;
-    document.getElementById('itemsCount').textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
-
-    if (items.length === 0) {
-        list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px;">No menu items detected. Try a clearer image.</p>';
-    }
-
-    let lastCat = '';
-    items.forEach((item, idx) => {
-        if (item.category && item.category !== lastCat) {
-            lastCat = item.category;
-            const div = document.createElement('div');
-            div.className = 'category-divider';
-            div.innerHTML = `<span class="category-label">${escHTML(item.category)}</span>`;
-            list.appendChild(div);
-        }
-
-        const statusClass = item.status === 'Remained' ? 'remained' : item.status === 'Finished' ? 'finished' : 'unknown';
-        const div = document.createElement('div');
-        div.className = 'menu-item';
-        div.innerHTML = `
-            <div class="menu-item-top">
-                <span class="dish-name">${escHTML(item.dishName)}</span>
-                <span class="status-tag ${statusClass}">${item.status}</span>
-            </div>
-            <div class="menu-item-fields">
-                <div>
-                    <div class="mini-label">Amount Remained</div>
-                    <input class="mini-input" id="amount_${idx}" value="${escHTML(item.amountRemained)}" placeholder="e.g., 20">
-                </div>
-                <div>
-                    <div class="mini-label">Status</div>
-                    <select class="mini-select" id="status_${idx}">
-                        <option value="Remained" ${item.status === 'Remained' ? 'selected' : ''}>Remained</option>
-                        <option value="Finished" ${item.status === 'Finished' ? 'selected' : ''}>Finished</option>
-                    </select>
-                </div>
-                <div>
-                    <div class="mini-label">Reason</div>
-                    <input class="mini-input" id="reason_${idx}" placeholder="Why remained?">
-                </div>
-                <div>
-                    <div class="mini-label">Notes</div>
-                    <input class="mini-input" id="notes_${idx}" placeholder="Additional notes">
-                </div>
-            </div>
-        `;
+    var lastCat='';
+    for(var idx=0;idx<items.length;idx++){
+        var item=items[idx];
+        if(item.category&&item.category!==lastCat){lastCat=item.category;var cd=document.createElement('div');cd.className='category-divider';cd.innerHTML='<span class="category-label">'+esc(item.category)+'</span>';list.appendChild(cd);}
+        var sc=item.status==='Remained'?'remained':item.status==='Finished'?'finished':'unknown';
+        var div=document.createElement('div');div.className='menu-item';
+        div.innerHTML='<div class="menu-item-top"><span class="dish-name">'+esc(item.dishName)+'</span><span class="status-tag '+sc+'">'+item.status+'</span></div><div class="menu-item-fields"><div><div class="mini-label">Amount Remained</div><input class="mini-input" id="amount_'+idx+'" value="'+esc(item.amountRemained)+'" placeholder="e.g. 20"></div><div><div class="mini-label">Status</div><select class="mini-select" id="status_'+idx+'"><option value="Remained"'+(item.status==='Remained'?' selected':'')+'>Remained</option><option value="Finished"'+(item.status==='Finished'?' selected':'')+'>Finished</option></select></div><div><div class="mini-label">Reason</div><input class="mini-input" id="reason_'+idx+'" placeholder="Why remained?"></div><div><div class="mini-label">Notes</div><input class="mini-input" id="notes_'+idx+'" placeholder="Notes"></div></div>';
         list.appendChild(div);
-    });
-
+    }
     document.getElementById('resultsSection').classList.add('show');
-    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
 }
 
-function normalizeType(t) {
-    const low = (t || '').toLowerCase();
-    if (low.includes('wedding')) return 'Wedding';
-    if (low.includes('bar')) return 'Bar Mitzvah';
-    if (low.includes('sheva')) return 'Sheva Brachot';
-    if (low.includes('vort')) return 'Vort';
-    if (low.includes('shabbat') || low.includes('shabbos')) return 'Shabbat';
-    if (low.includes('aufruf')) return 'Aufruf';
-    return '';
-}
-
-function normalizeHall(h) {
-    const low = (h || '').toLowerCase();
-    if (low.includes('ateres') || low.includes('golda')) return 'Ateres Golda';
-    if (low.includes('scharf')) return 'Scharf';
-    if (low.includes('lh')) return 'LH';
-    return '';
-}
-
-// ── Save to Sheets ──
-async function saveToSheets() {
+function saveToSheets(){
     hideAlerts();
-
-    const hallName = document.getElementById('hallName').value;
-    const hallSide = document.getElementById('hallSide').value;
-    const fullHall = hallSide ? hallName + ' - ' + hallSide : hallName;
-
-    const eventData = {
-        date: document.getElementById('eventDate').value,
-        eventType: document.getElementById('eventType').value,
-        hallName: fullHall,
-        eventSize: document.getElementById('eventSize').value,
-        eventOwner: document.getElementById('eventOwner').value,
-        startTime: document.getElementById('startTime').value,
-        phone: document.getElementById('eventPhone').value
-    };
-
-    const rows = extractedData.menuItems.map((item, idx) => ({
-        date: eventData.date,
-        eventType: eventData.eventType,
-        hallName: eventData.hallName,
-        eventSize: eventData.eventSize,
-        eventOwner: eventData.eventOwner,
-        startTime: eventData.startTime,
-        phone: eventData.phone,
-        dishName: item.dishName,
-        status: document.getElementById(`status_${idx}`).value,
-        amountRemained: document.getElementById(`amount_${idx}`).value,
-        reason: document.getElementById(`reason_${idx}`).value,
-        notes: document.getElementById(`notes_${idx}`).value
-    }));
-
-    try {
-        await fetch(GOOGLE_SHEETS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rows })
-        });
-
-        showAlert('success', `Saved ${rows.length} items! Opening sheet...`);
-        window.open('https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc', '_blank');
-        setTimeout(() => location.reload(), 3000);
-
-    } catch (err) {
-        console.error('Save error:', err);
-        showAlert('error', 'Failed to save. Check your connection.');
-    }
+    var hallName=document.getElementById('hallName').value;
+    var hallSide=document.getElementById('hallSide').value;
+    var fullHall=hallSide?hallName+' - '+hallSide:hallName;
+    var ev={date:document.getElementById('eventDate').value,eventType:document.getElementById('eventType').value,hallName:fullHall,eventSize:document.getElementById('eventSize').value,eventOwner:document.getElementById('eventOwner').value,startTime:document.getElementById('startTime').value,phone:document.getElementById('eventPhone').value};
+    var rows=extractedData.menuItems.map(function(item,idx){return{date:ev.date,eventType:ev.eventType,hallName:ev.hallName,eventSize:ev.eventSize,eventOwner:ev.eventOwner,startTime:ev.startTime,phone:ev.phone,dishName:item.dishName,status:document.getElementById('status_'+idx).value,amountRemained:document.getElementById('amount_'+idx).value,reason:document.getElementById('reason_'+idx).value,notes:document.getElementById('notes_'+idx).value};});
+    fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:rows})}).then(function(){showAlert('success','Saved '+rows.length+' items!');setTimeout(function(){location.reload()},3000);}).catch(function(){showAlert('error','Failed to save.');});
 }
 
-// ── Settings / Ignore List ──
-function openSettings() {
-    document.getElementById('settingsModal').classList.add('show');
-    renderIgnoreList();
-}
-function closeSettings() {
-    document.getElementById('settingsModal').classList.remove('show');
-}
+function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
+function renderIgnore(){var c=document.getElementById('ignoreListContainer');if(!ignoreList.length){c.innerHTML='<p style="text-align:center;color:#999;padding:16px">Empty</p>';return;}c.innerHTML=ignoreList.map(function(item,i){return'<div class="ignore-item"><span>'+esc(item)+'</span><button type="button" onclick="removeIgnore('+i+')">Remove</button></div>';}).join('');}
+function addIgnoreItem(){var inp=document.getElementById('newIgnoreItem');var v=inp.value.trim().toLowerCase();if(!v)return;if(ignoreList.indexOf(v)>=0){showAlert('error','Already exists.');return;}ignoreList.push(v);localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();inp.value='';}
+function removeIgnore(i){ignoreList.splice(i,1);localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();}
+function resetIgnoreList(){if(!confirm('Reset to defaults?'))return;ignoreList=DEFAULT_IGNORE.slice();localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();}
 
-function renderIgnoreList() {
-    const c = document.getElementById('ignoreListContainer');
-    if (ignoreList.length === 0) {
-        c.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:16px;">Ignore list is empty.</p>';
-        return;
-    }
-    c.innerHTML = ignoreList.map((item, idx) => `
-        <div class="ignore-item">
-            <span>${escHTML(item)}</span>
-            <button class="ignore-item-remove" onclick="removeIgnore(${idx})">Remove</button>
-        </div>
-    `).join('');
-}
-
-function addIgnoreItem() {
-    const inp = document.getElementById('newIgnoreItem');
-    const val = inp.value.trim().toLowerCase();
-    if (!val) return;
-    if (ignoreList.includes(val)) { showAlert('error', 'Already in the list.'); return; }
-    ignoreList.push(val);
-    saveIgnoreList();
-    renderIgnoreList();
-    inp.value = '';
-}
-
-function removeIgnore(idx) {
-    ignoreList.splice(idx, 1);
-    saveIgnoreList();
-    renderIgnoreList();
-}
-
-function resetIgnoreList() {
-    if (!confirm('Reset ignore list to defaults?')) return;
-    ignoreList = [...DEFAULT_IGNORE_LIST];
-    saveIgnoreList();
-    renderIgnoreList();
-}
-
-// ── Alerts ──
-function showAlert(type, msg) {
-    hideAlerts();
-    const el = type === 'success' ? document.getElementById('alertSuccess') : document.getElementById('alertError');
-    el.textContent = msg;
-    el.style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (type === 'success') setTimeout(() => el.style.display = 'none', 4000);
-}
-function hideAlerts() {
-    document.getElementById('alertSuccess').style.display = 'none';
-    document.getElementById('alertError').style.display = 'none';
-}
-
-// ── Util ──
-function escHTML(s) {
-    const d = document.createElement('div');
-    d.textContent = s || '';
-    return d.innerHTML;
-}
-
-// Close modal on overlay click
-document.getElementById('settingsModal').addEventListener('click', function(e) {
-    if (e.target === this) closeSettings();
-});
+function showAlert(type,msg){hideAlerts();var el=type==='success'?document.getElementById('alertSuccess'):document.getElementById('alertError');el.textContent=msg;el.style.display='block';window.scrollTo({top:0,behavior:'smooth'});if(type==='success')setTimeout(function(){el.style.display='none'},5000);}
+function hideAlerts(){document.getElementById('alertSuccess').style.display='none';document.getElementById('alertError').style.display='none';}
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 </script>
-
 </body>
 </html>
