@@ -439,7 +439,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>ðŸ“‹ Menu Scanner</h1>
+            <h1>📋 Menu Scanner</h1>
             <p>Ateres Golda Edition</p>
         </div>
 
@@ -448,14 +448,14 @@
 
         <div class="card" id="uploadCard">
             <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">ðŸ“„</div>
+                <div class="upload-icon">🔍„</div>
                 <h3>Scan or Upload Menu</h3>
                 <p>Optimized for Ateres Golda format</p>
             </div>
             
             <div class="upload-options">
                 <button class="upload-btn" onclick="document.getElementById('cameraInput').click()">
-                    ðŸ“¸ Take Photo
+                    📸 Take Photo
                 </button>
                 <button class="upload-btn" onclick="document.getElementById('imageInput').click()">
                     🖼️ Upload Image
@@ -466,7 +466,7 @@
             <input type="file" id="imageInput" accept="image/*">
             
             <div class="file-info" id="fileInfo">
-                <span>ðŸ“Ž</span>
+                <span>🔍Ž</span>
                 <span id="fileName"></span>
             </div>
             
@@ -485,7 +485,7 @@
 
         <div class="results" id="results">
             <div class="card">
-                <h2 style="margin-bottom: 20px;">ðŸ“ Review & Edit Data</h2>
+                <h2 style="margin-bottom: 20px;">🔍 Review & Edit Data</h2>
                 
                 <div class="form-group">
                     <label>Date</label>
@@ -549,7 +549,7 @@
         </div>
     </div>
 
-    <button class="settings-btn" onclick="openSettings()">⚙️</button>tton>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
 
     <div id="settingsModal" class="modal">
         <div class="modal-content">
@@ -563,7 +563,7 @@
                 <p>Common items to ignore: decorations, serving items, tax, headers</p>
             </div>
 
-            <div class="section-title">ðŸ“‹ Current Ignore List:</div>
+            <div class="section-title">🔍‹ Current Ignore List:</div>
             <div id="ignoreList" class="ignore-list"></div>
 
             <div class="add-ignore-section">
@@ -925,24 +925,19 @@
                     dishName = dishName.replace(amountMatch[0], '').trim();
                 }
                 
-                
-                // REASON DETECTION: Look for reason text (didn't show, left over, etc.)
+                // Look for reason text (didn't show, left over, etc.)
                 let reason = '';
-                
-                // Strategy 1: Look for common reason phrases
                 const reasonPatterns = [
                     /didn'?t\s+show/i,
                     /left\s+over/i,
                     /too\s+much/i,
-                    /not\s+fresh/i,
-                    /not\s+good/i
+                    /not\s+fresh/i
                 ];
                 
                 for (let pattern of reasonPatterns) {
                     const match = line.match(pattern);
                     if (match) {
                         reason = match[0];
-                        console.log('  → Found reason:', reason);
                         break;
                     }
                 }
