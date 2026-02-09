@@ -435,38 +435,22 @@
             font-size: 14px;
         }
 
-        .open-sheet-btn {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        .sheet-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #4CAF50;
             color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 14px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            margin-left: 10px;
         }
 
-        .open-sheet-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-        }
-
-        @media (max-width: 600px) {
-            .open-sheet-btn {
-                bottom: 80px;
-                right: 10px;
-                padding: 10px 16px;
-                font-size: 13px;
-            }
+        .sheet-link:hover {
+            background: #45a049;
+            transform: translateY(-1px);
         }
     </style>
 </head>
@@ -474,7 +458,12 @@
     <div class="container">
         <div class="header">
             <h1>📋 Menu Scanner</h1>
-            <p>Ateres Golda Edition</p>
+            <p>
+                Ateres Golda Edition
+                <a href="https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc/edit#gid=0" target="_blank" class="sheet-link">
+                    📊 View Data
+                </a>
+            </p>
         </div>
 
         <div class="success-message" id="successMessage"></div>
@@ -585,10 +574,6 @@
 
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 
-    <button class="open-sheet-btn" onclick="openGoogleSheet()">
-        📊 Open Google Sheet
-    </button>
-
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -677,12 +662,6 @@
 
         function closeSettings() {
             document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        function openGoogleSheet() {
-            // Google Sheets URL
-            const sheetUrl = 'https://docs.google.com/spreadsheets/d/1v8ghgCmUu4pWVRiBMgTBGn1GTY3ok6UP54MJ1Ulwgqc/edit';
-            window.open(sheetUrl, '_blank');
         }
 
         function displayIgnoreList() {
