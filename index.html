@@ -1633,9 +1633,11 @@ function scanMenu() {
     document.getElementById('progressFill').style.width = '30%';
     document.getElementById('progressLabel').textContent = '🧠 Sending to Claude AI...';
 
-    // Send to proxy
+    // Send to proxy (text/plain avoids CORS preflight)
     fetch(proxyUrl, {
         method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow',
         body: JSON.stringify({
             apiKey: apiKey,
             image: base64,
@@ -1645,10 +1647,13 @@ function scanMenu() {
     .then(function(response) {
         document.getElementById('progressFill').style.width = '70%';
         document.getElementById('progressLabel').textContent = 'Processing AI response...';
-        return response.json();
+        return response.text();
     })
-    .then(function(result) {
+    .then(function(text) {
         document.getElementById('progressFill').style.width = '90%';
+        var result;
+        try { result = JSON.parse(text); }
+        catch(e) { throw new Error('Invalid response from proxy. Check deployment settings.'); }
 
         if (result.status === 'error') {
             throw new Error(result.message || 'Unknown error');
