@@ -226,10 +226,11 @@
         </div>
     </div>
     <div class="top-bar-actions">
-        <a href="https://docs.google.com/spreadsheets/d/1kEwBmSSFf09rOy782nLSJVtT5vboLwXrBT1XpFxkP9w" target="_blank" rel="noopener" class="icon-btn">📊 View Sheet</a>
+        <button type="button" class="icon-btn" onclick="openHistory()">📋 History</button>
         <button type="button" class="icon-btn round" onclick="openSettings()">⚙</button>
     </div>
 </div>
+<div id="offlineBanner" style="display:none;background:#ff9800;color:white;text-align:center;padding:6px;font-size:12px;font-weight:600;">⚡ Offline Mode — data saved locally, will sync when connected</div>
 
 <div class="container">
     <div class="alert alert-success" id="alertSuccess"></div>
@@ -372,9 +373,52 @@
                 <span class="items-count" id="itemsCount">0 items</span>
             </div>
             <div id="menuItemsList"></div>
-            <button type="button" class="btn-primary btn-green" onclick="saveToSheets()">✅ Save to Google Sheets</button>
-            <a href="https://docs.google.com/spreadsheets/d/1kEwBmSSFf09rOy782nLSJVtT5vboLwXrBT1XpFxkP9w" target="_blank" rel="noopener" class="btn-primary btn-blue">📊 Open Google Sheet</a>
+            <button type="button" class="btn-primary btn-green" onclick="saveEvent()">✅ Save Event</button>
         </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal" onclick="if(event.target===this)closeHistory()">
+    <div class="modal" style="max-width:640px">
+        <div class="modal-header">
+            <h2>📋 Event History</h2>
+            <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="modal-close" style="width:auto;padding:6px 14px;font-size:13px;border-radius:6px;font-family:'DM Sans',sans-serif" onclick="exportToExcel()">📥 Excel</button>
+                <button type="button" class="modal-close" onclick="closeHistory()">✕</button>
+            </div>
+        </div>
+        <div class="modal-body" style="padding:16px">
+            <div style="display:flex;gap:8px;margin-bottom:16px">
+                <input type="text" class="form-input" id="historySearch" placeholder="Search events..." oninput="renderHistory()" style="flex:1">
+                <select class="form-input" id="historyFilter" onchange="renderHistory()" style="width:auto">
+                    <option value="">All Types</option>
+                    <option value="Wedding">Wedding</option>
+                    <option value="Bar Mitzvah">Bar Mitzvah</option>
+                    <option value="Sheva Brachot">Sheva Brachot</option>
+                    <option value="Vort">Vort</option>
+                    <option value="Shabbat">Shabbat</option>
+                    <option value="Aufruf">Aufruf</option>
+                </select>
+            </div>
+            <div id="historyStats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+            </div>
+            <div id="historyList" style="max-height:60vh;overflow-y:auto">
+                <p style="text-align:center;color:#999;padding:20px">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="eventDetailModal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+            <h2 id="detailTitle">Event Details</h2>
+            <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="modal-close" style="width:auto;padding:6px 14px;font-size:13px;border-radius:6px;font-family:'DM Sans',sans-serif;background:rgba(192,57,43,0.3)" onclick="deleteEvent()">🗑️</button>
+                <button type="button" class="modal-close" onclick="document.getElementById('eventDetailModal').classList.remove('show')">✕</button>
+            </div>
+        </div>
+        <div class="modal-body" id="detailBody"></div>
     </div>
 </div>
 
@@ -385,15 +429,37 @@
             <button type="button" class="modal-close" onclick="closeSettings()">✕</button>
         </div>
         <div class="modal-body">
-            <div class="modal-info">Items on this list are automatically filtered out during scanning — useful for decorations, serving items, taxes, and non-food entries.</div>
-            <div class="ignore-items" id="ignoreListContainer"></div>
-            <div class="add-ignore-row">
-                <input type="text" id="newIgnoreItem" placeholder="Add item to ignore..." onkeypress="if(event.key==='Enter')addIgnoreItem()">
-                <button type="button" onclick="addIgnoreItem()">+ Add</button>
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🔥 Firebase Setup</div>
+                <div class="modal-info">Connect to Firebase for cloud sync between devices. Create a free project at <a href="https://console.firebase.google.com" target="_blank" style="color:#2c5f8a">Firebase Console →</a></div>
+                <div id="firebaseStatus" style="padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;background:#e8f5ec;color:#3a7d4f">⏳ Not connected</div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">API Key</label>
+                    <input type="text" class="form-input" id="fbApiKey" placeholder="AIzaSy...">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Project ID</label>
+                    <input type="text" class="form-input" id="fbProjectId" placeholder="my-project-12345">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">App ID</label>
+                    <input type="text" class="form-input" id="fbAppId" placeholder="1:123456:web:abc123">
+                </div>
+                <button type="button" class="btn-reset-modal" style="background:var(--success)" onclick="saveFirebaseConfig()">💾 Save & Connect</button>
             </div>
-            <button type="button" class="btn-reset-modal" onclick="resetIgnoreList()">↺ Reset to Defaults</button>
 
-            <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🚫 Ignore List</div>
+                <div class="modal-info">Items on this list are filtered out during text-based scanning. (Less important now with highlight detection.)</div>
+                <div class="ignore-items" id="ignoreListContainer"></div>
+                <div class="add-ignore-row">
+                    <input type="text" id="newIgnoreItem" placeholder="Add item to ignore..." onkeypress="if(event.key==='Enter')addIgnoreItem()">
+                    <button type="button" onclick="addIgnoreItem()">+ Add</button>
+                </div>
+                <button type="button" class="btn-reset-modal" onclick="resetIgnoreList()">↺ Reset to Defaults</button>
+            </div>
+
+            <div>
                 <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">📁 Google Drive Setup</div>
                 <div class="modal-info">To enable Google Drive picker, you need a Google Cloud project with Picker API enabled. <a href="https://console.cloud.google.com" target="_blank" style="color:#2c5f8a">Open Google Console →</a></div>
                 <div style="margin-bottom:10px">
@@ -416,11 +482,303 @@
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 var extractedData = null;
 var imageFile = null;
 var originalImage = null;
-var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw0MZG9bmL8qyrFho_vcBph3HmRquiUCf0QfzXOVPwMJkxO0ww-SNO8kAJHGidlz5zfOw/exec';
+var db = null; // Firestore reference
+var currentDetailEventId = null; // for detail modal
+
+/* ═══ FIREBASE ═══ */
+function initFirebase() {
+    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || 'null');
+    if (!cfg || !cfg.apiKey || !cfg.projectId) {
+        updateFirebaseStatus(false);
+        return;
+    }
+    try {
+        if (firebase.apps.length) firebase.app().delete().then(function() { doInit(cfg); });
+        else doInit(cfg);
+    } catch(e) { doInit(cfg); }
+}
+function doInit(cfg) {
+    try {
+        firebase.initializeApp({
+            apiKey: cfg.apiKey,
+            projectId: cfg.projectId,
+            appId: cfg.appId || 'placeholder'
+        });
+        db = firebase.firestore();
+        db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+            console.log('Persistence error:', err.code);
+        });
+        // Test connection
+        db.collection('events').limit(1).get().then(function() {
+            updateFirebaseStatus(true);
+        }).catch(function() {
+            updateFirebaseStatus(true); // may be offline but persistence works
+        });
+    } catch(e) {
+        console.error('Firebase init error:', e);
+        updateFirebaseStatus(false);
+    }
+}
+function updateFirebaseStatus(connected) {
+    var el = document.getElementById('firebaseStatus');
+    if (!el) return;
+    if (connected) {
+        el.textContent = '✅ Connected';
+        el.style.background = '#e8f5ec'; el.style.color = '#3a7d4f';
+    } else {
+        el.textContent = '❌ Not connected — configure in Settings';
+        el.style.background = '#fdf0ee'; el.style.color = '#c0392b';
+    }
+}
+function saveFirebaseConfig() {
+    var cfg = {
+        apiKey: document.getElementById('fbApiKey').value.trim(),
+        projectId: document.getElementById('fbProjectId').value.trim(),
+        appId: document.getElementById('fbAppId').value.trim()
+    };
+    localStorage.setItem('firebaseConfig', JSON.stringify(cfg));
+    // Re-initialize
+    if (firebase.apps.length) {
+        firebase.app().delete().then(function() { db = null; initFirebase(); });
+    } else {
+        initFirebase();
+    }
+}
+function loadFirebaseConfig() {
+    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || '{}');
+    var el1 = document.getElementById('fbApiKey');
+    var el2 = document.getElementById('fbProjectId');
+    var el3 = document.getElementById('fbAppId');
+    if (el1) el1.value = cfg.apiKey || '';
+    if (el2) el2.value = cfg.projectId || '';
+    if (el3) el3.value = cfg.appId || '';
+}
+
+/* ═══ SAVE EVENT ═══ */
+function saveEvent() {
+    hideAlerts();
+    if (!db) { showAlert('error', 'Firebase not connected. Go to Settings → Firebase Setup.'); return; }
+
+    var hallName = document.getElementById('hallName').value;
+    var hallSide = document.getElementById('hallSide').value;
+    var fullHall = hallSide ? hallName + ' - ' + hallSide : hallName;
+
+    var items = extractedData.menuItems.map(function(item, idx) {
+        return {
+            dishName: item.dishName,
+            status: document.getElementById('status_' + idx).value,
+            amountRemained: document.getElementById('amount_' + idx).value || '',
+            reason: document.getElementById('reason_' + idx).value || '',
+            notes: document.getElementById('notes_' + idx).value || ''
+        };
+    });
+
+    var eventDoc = {
+        date: document.getElementById('eventDate').value,
+        eventType: document.getElementById('eventType').value,
+        hallName: fullHall,
+        eventSize: document.getElementById('eventSize').value,
+        eventOwner: document.getElementById('eventOwner').value,
+        startTime: document.getElementById('startTime').value,
+        phone: document.getElementById('eventPhone').value,
+        items: items,
+        itemCount: items.length,
+        remainedCount: items.filter(function(i) { return i.status === 'Remained'; }).length,
+        finishedCount: items.filter(function(i) { return i.status === 'Finished'; }).length,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    db.collection('events').add(eventDoc).then(function(docRef) {
+        showAlert('success', '✅ Saved! ' + items.length + ' items (' + eventDoc.remainedCount + ' remained, ' + eventDoc.finishedCount + ' finished)');
+        setTimeout(function() { location.reload(); }, 2500);
+    }).catch(function(err) {
+        console.error('Save error:', err);
+        showAlert('error', 'Save failed: ' + err.message);
+    });
+}
+
+/* ═══ HISTORY ═══ */
+function openHistory() {
+    document.getElementById('historyModal').classList.add('show');
+    renderHistory();
+}
+function closeHistory() { document.getElementById('historyModal').classList.remove('show'); }
+
+function renderHistory() {
+    var listEl = document.getElementById('historyList');
+    var statsEl = document.getElementById('historyStats');
+    if (!db) {
+        listEl.innerHTML = '<p style="text-align:center;color:#999;padding:20px">Firebase not connected.<br>Go to Settings → Firebase Setup.</p>';
+        statsEl.innerHTML = '';
+        return;
+    }
+
+    var searchTerm = (document.getElementById('historySearch').value || '').toLowerCase();
+    var filterType = document.getElementById('historyFilter').value;
+
+    db.collection('events').orderBy('date', 'desc').limit(100).get().then(function(snapshot) {
+        var events = [];
+        snapshot.forEach(function(doc) { events.push(Object.assign({ id: doc.id }, doc.data())); });
+
+        // Apply filters
+        if (filterType) events = events.filter(function(e) { return e.eventType === filterType; });
+        if (searchTerm) events = events.filter(function(e) {
+            return (e.eventOwner || '').toLowerCase().includes(searchTerm) ||
+                   (e.hallName || '').toLowerCase().includes(searchTerm) ||
+                   (e.date || '').includes(searchTerm) ||
+                   (e.items || []).some(function(i) { return i.dishName.toLowerCase().includes(searchTerm); });
+        });
+
+        // Stats
+        var totalEvents = events.length;
+        var totalRemained = events.reduce(function(s, e) { return s + (e.remainedCount || 0); }, 0);
+        var totalFinished = events.reduce(function(s, e) { return s + (e.finishedCount || 0); }, 0);
+        statsEl.innerHTML =
+            '<div style="background:var(--bg);padding:10px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--primary)">' + totalEvents + '</div><div style="font-size:11px;color:var(--text-muted)">Events</div></div>' +
+            '<div style="background:var(--remained-bg);padding:10px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:700;color:#8b6914">' + totalRemained + '</div><div style="font-size:11px;color:#8b6914">Remained</div></div>' +
+            '<div style="background:var(--finished-bg);padding:10px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--finished)">' + totalFinished + '</div><div style="font-size:11px;color:var(--finished)">Finished</div></div>';
+
+        if (events.length === 0) {
+            listEl.innerHTML = '<p style="text-align:center;color:#999;padding:20px">No events found.</p>';
+            return;
+        }
+
+        listEl.innerHTML = events.map(function(ev) {
+            var pct = ev.itemCount > 0 ? Math.round((ev.remainedCount / ev.itemCount) * 100) : 0;
+            var pctColor = pct > 50 ? '#c0392b' : pct > 25 ? '#e67e22' : '#3a7d4f';
+            return '<div onclick="openEventDetail(\'' + ev.id + '\')" style="padding:14px;background:white;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+                '<strong style="color:var(--primary)">' + esc(ev.eventOwner || 'Unknown') + '</strong>' +
+                '<span style="font-size:12px;color:var(--text-muted)">' + esc(ev.date || '') + '</span></div>' +
+                '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+                '<span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:12px;font-weight:600">' + esc(ev.eventType || '') + '</span>' +
+                '<span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:12px">' + esc(ev.hallName || '') + '</span>' +
+                '<span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:12px">' + (ev.itemCount || 0) + ' items</span>' +
+                '<span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700;color:' + pctColor + ';background:' + (pct > 50 ? 'var(--error-bg)' : pct > 25 ? '#fff5e6' : 'var(--success-bg)') + '">' + pct + '% remained</span>' +
+                '</div></div>';
+        }).join('');
+    }).catch(function(err) {
+        listEl.innerHTML = '<p style="text-align:center;color:#c0392b;padding:20px">Error: ' + err.message + '</p>';
+    });
+}
+
+function openEventDetail(eventId) {
+    currentDetailEventId = eventId;
+    if (!db) return;
+    db.collection('events').doc(eventId).get().then(function(doc) {
+        if (!doc.exists) return;
+        var ev = doc.data();
+        document.getElementById('detailTitle').textContent = esc(ev.eventOwner || 'Event') + ' — ' + esc(ev.date || '');
+        var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
+            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Type:</strong> ' + esc(ev.eventType) + '</div>' +
+            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Hall:</strong> ' + esc(ev.hallName) + '</div>' +
+            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Guests:</strong> ' + esc(ev.eventSize) + '</div>' +
+            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Phone:</strong> ' + esc(ev.phone) + '</div></div>';
+
+        html += '<h3 style="font-family:Playfair Display,serif;color:var(--primary);margin-bottom:12px">Menu Items (' + (ev.items || []).length + ')</h3>';
+        (ev.items || []).forEach(function(item) {
+            var sc = item.status === 'Remained' ? 'remained' : item.status === 'Finished' ? 'finished' : 'unknown';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;margin-bottom:6px;background:' + (sc === 'remained' ? 'var(--remained-bg)' : sc === 'finished' ? 'var(--finished-bg)' : 'var(--bg)') + '">' +
+                '<span style="font-weight:600;font-size:14px">' + esc(item.dishName) + '</span>' +
+                '<div style="display:flex;align-items:center;gap:8px">' +
+                (item.amountRemained ? '<strong style="color:var(--accent)">' + esc(item.amountRemained) + '</strong>' : '') +
+                '<span class="status-tag ' + sc + '">' + item.status + '</span></div></div>';
+        });
+
+        document.getElementById('detailBody').innerHTML = html;
+        document.getElementById('eventDetailModal').classList.add('show');
+    });
+}
+
+function deleteEvent() {
+    if (!currentDetailEventId || !db) return;
+    if (!confirm('Delete this event permanently?')) return;
+    db.collection('events').doc(currentDetailEventId).delete().then(function() {
+        document.getElementById('eventDetailModal').classList.remove('show');
+        showAlert('success', 'Event deleted.');
+        renderHistory();
+    }).catch(function(err) {
+        showAlert('error', 'Delete failed: ' + err.message);
+    });
+}
+
+/* ═══ EXPORT TO EXCEL ═══ */
+function exportToExcel() {
+    if (!db) { showAlert('error', 'Firebase not connected.'); return; }
+
+    db.collection('events').orderBy('date', 'desc').get().then(function(snapshot) {
+        var eventsData = [];
+        var itemsData = [];
+
+        snapshot.forEach(function(doc) {
+            var ev = doc.data();
+            eventsData.push({
+                'Date': ev.date,
+                'Event Type': ev.eventType,
+                'Hall': ev.hallName,
+                'Guests': ev.eventSize,
+                'Client': ev.eventOwner,
+                'Start Time': ev.startTime,
+                'Phone': ev.phone,
+                'Total Items': ev.itemCount || 0,
+                'Remained': ev.remainedCount || 0,
+                'Finished': ev.finishedCount || 0,
+                'Remained %': ev.itemCount > 0 ? Math.round((ev.remainedCount / ev.itemCount) * 100) + '%' : '0%'
+            });
+
+            (ev.items || []).forEach(function(item) {
+                itemsData.push({
+                    'Date': ev.date,
+                    'Event Type': ev.eventType,
+                    'Hall': ev.hallName,
+                    'Client': ev.eventOwner,
+                    'Dish Name': item.dishName,
+                    'Status': item.status,
+                    'Amount Remained': item.amountRemained,
+                    'Reason': item.reason,
+                    'Notes': item.notes
+                });
+            });
+        });
+
+        if (eventsData.length === 0) {
+            showAlert('error', 'No events to export.'); return;
+        }
+
+        var wb = XLSX.utils.book_new();
+        var ws1 = XLSX.utils.json_to_sheet(eventsData);
+        var ws2 = XLSX.utils.json_to_sheet(itemsData);
+
+        // Set column widths
+        ws1['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 10 }, { wch: 18 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
+        ws2['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 30 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 20 }];
+
+        XLSX.utils.book_append_sheet(wb, ws1, 'Events Summary');
+        XLSX.utils.book_append_sheet(wb, ws2, 'Menu Items');
+
+        var fileName = 'Ateres_Golda_Events_' + new Date().toISOString().split('T')[0] + '.xlsx';
+        XLSX.writeFile(wb, fileName);
+        showAlert('success', 'Exported ' + eventsData.length + ' events to ' + fileName);
+    }).catch(function(err) {
+        showAlert('error', 'Export failed: ' + err.message);
+    });
+}
+
+/* ═══ OFFLINE DETECTION ═══ */
+window.addEventListener('online', function() {
+    document.getElementById('offlineBanner').style.display = 'none';
+});
+window.addEventListener('offline', function() {
+    document.getElementById('offlineBanner').style.display = 'block';
+});
+if (!navigator.onLine) document.getElementById('offlineBanner').style.display = 'block';
 
 /* ═══ GOOGLE DRIVE PICKER ═══ */
 // To enable Google Drive picker:
@@ -524,6 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(cfg.apiKey)GOOGLE_API_KEY=cfg.apiKey;
     if(cfg.clientId)GOOGLE_CLIENT_ID=cfg.clientId;
     if(cfg.appId)GOOGLE_APP_ID=cfg.appId;
+    initFirebase();
 });
 
 function handleFile(file) {
@@ -930,17 +1289,7 @@ function displayResults(){
     document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
 }
 
-function saveToSheets(){
-    hideAlerts();
-    var hallName=document.getElementById('hallName').value;
-    var hallSide=document.getElementById('hallSide').value;
-    var fullHall=hallSide?hallName+' - '+hallSide:hallName;
-    var ev={date:document.getElementById('eventDate').value,eventType:document.getElementById('eventType').value,hallName:fullHall,eventSize:document.getElementById('eventSize').value,eventOwner:document.getElementById('eventOwner').value,startTime:document.getElementById('startTime').value,phone:document.getElementById('eventPhone').value};
-    var rows=extractedData.menuItems.map(function(item,idx){return{date:ev.date,eventType:ev.eventType,hallName:ev.hallName,eventSize:ev.eventSize,eventOwner:ev.eventOwner,startTime:ev.startTime,phone:ev.phone,dishName:item.dishName,status:document.getElementById('status_'+idx).value,amountRemained:document.getElementById('amount_'+idx).value,reason:document.getElementById('reason_'+idx).value,notes:document.getElementById('notes_'+idx).value};});
-    fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:rows})}).then(function(){showAlert('success','Saved '+rows.length+' items!');setTimeout(function(){location.reload()},3000);}).catch(function(){showAlert('error','Failed to save.');});
-}
-
-function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();loadGoogleConfig();}
+function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();loadGoogleConfig();loadFirebaseConfig();}
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
 
 function saveGoogleConfig(){
