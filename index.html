@@ -213,9 +213,63 @@
             .upload-btn-label { font-size: 12px; }
             .upload-btn-hint { font-size: 10px; }
         }
+        /* PIN Login Screen */
+        .pin-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, var(--primary) 0%, #1a4a32 100%);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .pin-screen.hidden { display: none; }
+        .pin-box {
+            background: white; border-radius: 20px; padding: 40px 36px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
+            max-width: 360px; width: 90%;
+        }
+        .pin-box-logo {
+            width: 64px; height: 64px; background: var(--accent);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: white; font-family: 'Playfair Display', serif;
+            font-weight: 700; margin: 0 auto 20px;
+        }
+        .pin-box h2 { font-family: 'Playfair Display', serif; color: var(--primary); margin-bottom: 6px; font-size: 22px; }
+        .pin-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+        .pin-input {
+            width: 100%; padding: 16px; font-size: 24px; text-align: center;
+            border: 2px solid var(--border); border-radius: 12px;
+            font-family: 'DM Sans', sans-serif; letter-spacing: 12px;
+            color: var(--primary); font-weight: 700;
+        }
+        .pin-input:focus { outline: none; border-color: var(--accent); }
+        .pin-input.error { border-color: var(--error); animation: shake 0.4s ease; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        .pin-btn {
+            width: 100%; padding: 16px; margin-top: 16px;
+            background: var(--accent); color: white; border: none;
+            border-radius: 12px; font-size: 16px; font-weight: 700;
+            font-family: 'DM Sans', sans-serif; cursor: pointer;
+        }
+        .pin-btn:hover { background: var(--accent-hover); }
+        .pin-error-msg { color: var(--error); font-size: 13px; margin-top: 12px; display: none; font-weight: 600; }
+        .main-app { display: none; }
     </style>
 </head>
 <body>
+
+<!-- PIN Login Screen -->
+<div class="pin-screen" id="pinScreen">
+    <div class="pin-box">
+        <div class="pin-box-logo">AG</div>
+        <h2>Menu Scanner</h2>
+        <p>Enter PIN to access</p>
+        <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="••••" inputmode="numeric" pattern="[0-9]*" onkeypress="if(event.key==='Enter')checkPin()">
+        <button type="button" class="pin-btn" onclick="checkPin()">🔓 Enter</button>
+        <div class="pin-error-msg" id="pinError">Incorrect PIN</div>
+    </div>
+</div>
+
+<!-- Main App (hidden until PIN verified) -->
+<div class="main-app" id="mainApp">
 
 <div class="top-bar">
     <div class="top-bar-brand">
@@ -430,6 +484,25 @@
         </div>
         <div class="modal-body">
             <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🔒 Security</div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Current PIN</label>
+                    <input type="password" class="form-input" id="currentPin" placeholder="••••" inputmode="numeric" maxlength="6">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">New PIN</label>
+                    <input type="password" class="form-input" id="newPin" placeholder="New PIN (min 4 digits)" inputmode="numeric" maxlength="6">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Confirm New PIN</label>
+                    <input type="password" class="form-input" id="confirmPin" placeholder="Confirm new PIN" inputmode="numeric" maxlength="6">
+                </div>
+                <button type="button" class="btn-reset-modal" style="background:var(--accent)" onclick="changePin()">🔑 Change PIN</button>
+                <button type="button" class="btn-reset-modal" style="background:var(--error);margin-top:8px" onclick="logout()">🚪 Logout</button>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Default PIN: 1234 — change it now!</p>
+            </div>
+
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
                 <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🔥 Firebase Setup</div>
                 <div class="modal-info">Connect to Firebase for cloud sync between devices. Create a free project at <a href="https://console.firebase.google.com" target="_blank" style="color:#2c5f8a">Firebase Console →</a></div>
                 <div id="firebaseStatus" style="padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;background:#e8f5ec;color:#3a7d4f">⏳ Not connected</div>
@@ -479,11 +552,14 @@
     </div>
 </div>
 
+</div><!-- end main-app -->
+
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 var extractedData = null;
@@ -883,6 +959,117 @@ var DEFAULT_IGNORE = [
 ];
 var ignoreList = JSON.parse(localStorage.getItem('ignoreList2')) || DEFAULT_IGNORE.slice();
 
+/* ═══ PIN AUTHENTICATION ═══ */
+var APP_PIN_HASH_KEY = 'ag_pin_hash';
+var APP_SESSION_KEY = 'ag_session';
+var DEFAULT_PIN = '1234'; // Default PIN — user should change in Settings
+
+function hashPin(pin) {
+    // Simple hash for client-side PIN (not cryptographic, but sufficient for app lock)
+    var hash = 0;
+    var str = 'AG_SALT_' + pin + '_MENU';
+    for (var i = 0; i < str.length; i++) {
+        var chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+    }
+    return 'pin_' + Math.abs(hash).toString(36);
+}
+
+function checkPin() {
+    var input = document.getElementById('pinInput');
+    var pin = input.value.trim();
+    if (!pin) return;
+
+    var storedHash = localStorage.getItem(APP_PIN_HASH_KEY);
+    if (!storedHash) {
+        // First time — set default PIN hash
+        storedHash = hashPin(DEFAULT_PIN);
+        localStorage.setItem(APP_PIN_HASH_KEY, storedHash);
+    }
+
+    if (hashPin(pin) === storedHash) {
+        // PIN correct — sign in to Firebase Auth
+        unlockApp();
+    } else {
+        input.classList.add('error');
+        document.getElementById('pinError').style.display = 'block';
+        setTimeout(function() {
+            input.classList.remove('error');
+            document.getElementById('pinError').style.display = 'none';
+        }, 2000);
+        input.value = '';
+    }
+}
+
+function unlockApp() {
+    // Save session (valid for 24 hours)
+    localStorage.setItem(APP_SESSION_KEY, Date.now().toString());
+
+    // Sign in anonymously to Firebase
+    if (firebase.apps.length && firebase.auth) {
+        firebase.auth().signInAnonymously().catch(function(err) {
+            console.log('Anonymous auth error:', err);
+        });
+    }
+
+    document.getElementById('pinScreen').classList.add('hidden');
+    document.getElementById('mainApp').style.display = 'block';
+}
+
+function checkSession() {
+    var session = localStorage.getItem(APP_SESSION_KEY);
+    if (session) {
+        var elapsed = Date.now() - parseInt(session);
+        // Session valid for 24 hours
+        if (elapsed < 24 * 60 * 60 * 1000) {
+            unlockApp();
+            return;
+        }
+    }
+    // Show PIN screen
+    document.getElementById('pinScreen').classList.remove('hidden');
+    document.getElementById('mainApp').style.display = 'none';
+    setTimeout(function() { document.getElementById('pinInput').focus(); }, 300);
+}
+
+function changePin() {
+    var current = document.getElementById('currentPin').value.trim();
+    var newPin = document.getElementById('newPin').value.trim();
+    var confirmPin = document.getElementById('confirmPin').value.trim();
+
+    var storedHash = localStorage.getItem(APP_PIN_HASH_KEY) || hashPin(DEFAULT_PIN);
+
+    if (hashPin(current) !== storedHash) {
+        showAlert('error', 'Current PIN is incorrect.');
+        return;
+    }
+    if (newPin.length < 4) {
+        showAlert('error', 'PIN must be at least 4 digits.');
+        return;
+    }
+    if (newPin !== confirmPin) {
+        showAlert('error', 'New PINs do not match.');
+        return;
+    }
+
+    localStorage.setItem(APP_PIN_HASH_KEY, hashPin(newPin));
+    document.getElementById('currentPin').value = '';
+    document.getElementById('newPin').value = '';
+    document.getElementById('confirmPin').value = '';
+    showAlert('success', '✅ PIN changed successfully!');
+}
+
+function logout() {
+    localStorage.removeItem(APP_SESSION_KEY);
+    if (firebase.auth) firebase.auth().signOut();
+    document.getElementById('pinScreen').classList.remove('hidden');
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+    closeSettings();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('eventDate').valueAsDate = new Date();
     var cfg=JSON.parse(localStorage.getItem('googleDriveConfig')||'{}');
@@ -890,6 +1077,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(cfg.clientId)GOOGLE_CLIENT_ID=cfg.clientId;
     if(cfg.appId)GOOGLE_APP_ID=cfg.appId;
     initFirebase();
+    checkSession();
 });
 
 function handleFile(file) {
