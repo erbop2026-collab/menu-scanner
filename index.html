@@ -493,8 +493,15 @@ var db = null; // Firestore reference
 var currentDetailEventId = null; // for detail modal
 
 /* ═══ FIREBASE ═══ */
+var FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyCSaIMmLjUIdxWVFjjDTlcWIyQBfnpKWYw',
+    projectId: 'depreciation-recording',
+    appId: '1:480755533717:web:a5c7f7d71b17453ffa189c'
+};
+
 function initFirebase() {
-    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || 'null');
+    // Allow override from localStorage (settings), fallback to hardcoded
+    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || 'null') || FIREBASE_CONFIG;
     if (!cfg || !cfg.apiKey || !cfg.projectId) {
         updateFirebaseStatus(false);
         return;
@@ -552,7 +559,7 @@ function saveFirebaseConfig() {
     }
 }
 function loadFirebaseConfig() {
-    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || '{}');
+    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || 'null') || FIREBASE_CONFIG;
     var el1 = document.getElementById('fbApiKey');
     var el2 = document.getElementById('fbProjectId');
     var el3 = document.getElementById('fbAppId');
