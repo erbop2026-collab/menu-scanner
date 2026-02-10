@@ -212,6 +212,10 @@
             .upload-btn-icon { font-size: 26px; }
             .upload-btn-label { font-size: 12px; }
             .upload-btn-hint { font-size: 10px; }
+            .tabs { gap: 0; }
+            .tab { padding: 8px 10px; font-size: 11px; }
+            .data-table { font-size: 11px; }
+            .data-table th, .data-table td { padding: 5px 6px; }
         }
         /* PIN Login Screen */
         .pin-screen {
@@ -252,6 +256,35 @@
         .pin-btn:hover { background: var(--accent-hover); }
         .pin-error-msg { color: var(--error); font-size: 13px; margin-top: 12px; display: none; font-weight: 600; }
         .main-app { display: none; }
+        /* Tabs */
+        .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tab {
+            padding: 10px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+            color: var(--text-muted); border-bottom: 2px solid transparent;
+            margin-bottom: -2px; white-space: nowrap; font-family: 'DM Sans', sans-serif;
+            background: none; border-top: none; border-left: none; border-right: none;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }
+        .stat-card { background: var(--bg); padding: 12px; border-radius: 10px; text-align: center; }
+        .stat-card.warn { background: var(--remained-bg); }
+        .stat-card.good { background: var(--finished-bg); }
+        .stat-card.accent { background: #f0e6ff; }
+        .stat-val { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-table th { background: var(--primary); color: white; padding: 8px 10px; text-align: left; font-weight: 600; position: sticky; top: 0; }
+        .data-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+        .data-table tr:hover td { background: #f9f7f4; }
+        .rank-badge { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: white; text-align: center; line-height: 22px; font-size: 11px; font-weight: 700; }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: white; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+        .inv-dish { font-weight: 600; font-size: 14px; color: var(--primary); }
+        .inv-meta { font-size: 12px; color: var(--text-muted); }
+        .inv-amount { font-size: 18px; font-weight: 700; color: var(--accent); }
     </style>
 </head>
 <body>
@@ -280,11 +313,20 @@
         </div>
     </div>
     <div class="top-bar-actions">
-        <button type="button" class="icon-btn" onclick="openHistory()">📋 History</button>
         <button type="button" class="icon-btn round" onclick="openSettings()">⚙</button>
     </div>
 </div>
 <div id="offlineBanner" style="display:none;background:#ff9800;color:white;text-align:center;padding:6px;font-size:12px;font-weight:600;">⚡ Offline Mode — data saved locally, will sync when connected</div>
+
+<!-- Main Action Bar -->
+<div style="max-width:640px;margin:12px auto 0;padding:0 16px;display:flex;gap:10px" id="actionBar">
+    <button type="button" onclick="openHistory()" style="flex:1;padding:14px;background:var(--primary);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-md)">
+        📊 Reports & Data
+    </button>
+    <button type="button" onclick="exportToExcel()" style="padding:14px 20px;background:var(--accent);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-md)">
+        📥 Excel
+    </button>
+</div>
 
 <div class="container">
     <div class="alert alert-success" id="alertSuccess"></div>
@@ -312,13 +354,17 @@
             </div>
         </div>
 
+        <!-- Scan button + hint ABOVE the preview -->
+        <button type="button" class="btn-primary" id="scanButton" style="display:none;margin-top:16px;font-size:17px;padding:18px" onclick="scanMenu()">🔍 Scan Highlighted Items</button>
+        <p id="scanHint" style="display:none;text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">🟡 Yellow = Remained &nbsp; 🔴 Red/Purple = Finished &nbsp; ⬜ No highlight = Ignored</p>
+
         <div class="preview-section" id="previewSection">
-            <div class="preview-wrapper">
-                <canvas id="previewCanvas"></canvas>
-            </div>
             <div class="preview-file-name">
                 <span>📎</span>
                 <span id="fileName">No file selected</span>
+            </div>
+            <div class="preview-wrapper">
+                <canvas id="previewCanvas"></canvas>
             </div>
             <div class="align-tools" id="alignTools">
                 <div class="align-tools-title">📐 Image Alignment</div>
@@ -343,8 +389,6 @@
                 </div>
             </div>
         </div>
-        <button type="button" class="btn-primary" id="scanButton" style="display:none" onclick="scanMenu()">🔍 Scan Highlighted Items</button>
-        <p id="scanHint" style="display:none;text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">🟡 Yellow = Remained &nbsp; 🔴 Red/Purple = Finished &nbsp; ⬜ No highlight = Ignored</p>
     </div>
 
     <div class="loading-section" id="loadingSection">
@@ -357,6 +401,11 @@
     </div>
 
     <div class="results-section" id="resultsSection">
+        <!-- Sticky save bar at top -->
+        <div style="position:sticky;top:56px;z-index:50;background:var(--success);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md)">
+            <div style="color:white;font-weight:600;font-size:14px">📋 Ready to save?</div>
+            <button type="button" onclick="saveEvent()" style="padding:10px 24px;background:white;color:var(--success);border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">✅ Save Event</button>
+        </div>
         <div class="card">
             <div class="card-title">Event Details</div>
             <div class="form-grid">
@@ -433,46 +482,89 @@
 </div>
 
 <div class="modal-overlay" id="historyModal" onclick="if(event.target===this)closeHistory()">
-    <div class="modal" style="max-width:640px">
+    <div class="modal" style="max-width:720px">
         <div class="modal-header">
-            <h2>📋 Event History</h2>
+            <h2>📊 Reports & Data</h2>
             <div style="display:flex;gap:8px;align-items:center">
                 <button type="button" class="modal-close" style="width:auto;padding:6px 14px;font-size:13px;border-radius:6px;font-family:'DM Sans',sans-serif" onclick="exportToExcel()">📥 Excel</button>
                 <button type="button" class="modal-close" onclick="closeHistory()">✕</button>
             </div>
         </div>
-        <div class="modal-body" style="padding:16px">
-            <div style="display:flex;gap:8px;margin-bottom:16px">
-                <input type="text" class="form-input" id="historySearch" placeholder="Search events..." oninput="renderHistory()" style="flex:1">
-                <select class="form-input" id="historyFilter" onchange="renderHistory()" style="width:auto">
-                    <option value="">All Types</option>
-                    <option value="Wedding">Wedding</option>
-                    <option value="Bar Mitzvah">Bar Mitzvah</option>
-                    <option value="Sheva Brachot">Sheva Brachot</option>
-                    <option value="Vort">Vort</option>
-                    <option value="Shabbat">Shabbat</option>
-                    <option value="Aufruf">Aufruf</option>
-                </select>
+        <div class="modal-body" style="padding:12px">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+                <button class="tab" onclick="switchTab('inventory',this)">📦 Inventory</button>
+                <button class="tab" onclick="switchTab('events',this)">📅 Events</button>
+                <button class="tab" onclick="switchTab('details',this)">🔍 Details</button>
+                <button class="tab" onclick="switchTab('rawdata',this)">🗄️ Raw Data</button>
             </div>
-            <div id="historyStats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-            </div>
-            <div id="historyList" style="max-height:60vh;overflow-y:auto">
-                <p style="text-align:center;color:#999;padding:20px">Loading...</p>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="modal-overlay" id="eventDetailModal" onclick="if(event.target===this)this.classList.remove('show')">
-    <div class="modal" style="max-width:560px">
-        <div class="modal-header">
-            <h2 id="detailTitle">Event Details</h2>
-            <div style="display:flex;gap:8px;align-items:center">
-                <button type="button" class="modal-close" style="width:auto;padding:6px 14px;font-size:13px;border-radius:6px;font-family:'DM Sans',sans-serif;background:rgba(192,57,43,0.3)" onclick="deleteEvent()">🗑️</button>
-                <button type="button" class="modal-close" onclick="document.getElementById('eventDetailModal').classList.remove('show')">✕</button>
+            <!-- TAB 1: Dashboard -->
+            <div class="tab-content active" id="tab-dashboard">
+                <div id="dashStats" class="stat-grid"></div>
+                <h4 style="color:var(--primary);margin:16px 0 8px;font-family:'Playfair Display',serif">🔴 Top 10 Most Wasted Dishes</h4>
+                <div id="dashTopWasted" style="max-height:280px;overflow-y:auto"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+                    <div>
+                        <h4 style="color:var(--primary);margin-bottom:8px;font-family:'Playfair Display',serif;font-size:14px">📈 By Event Type</h4>
+                        <div id="dashByType"></div>
+                    </div>
+                    <div>
+                        <h4 style="color:var(--primary);margin-bottom:8px;font-family:'Playfair Display',serif;font-size:14px">🏛️ By Hall</h4>
+                        <div id="dashByHall"></div>
+                    </div>
+                </div>
+                <h4 style="color:var(--primary);margin:16px 0 8px;font-family:'Playfair Display',serif">📅 Monthly Trends</h4>
+                <div id="dashMonthly" style="max-height:220px;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 2: Current Inventory -->
+            <div class="tab-content" id="tab-inventory">
+                <div class="modal-info" style="margin-bottom:12px">📦 Items that <strong>remained</strong> from the most recent events — actionable info for today's decisions.</div>
+                <div id="invStats" class="stat-grid"></div>
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                    <select class="form-input" id="invDays" onchange="renderInventory()" style="width:auto">
+                        <option value="3">Last 3 days</option>
+                        <option value="7" selected>Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                </div>
+                <div id="invList" style="max-height:50vh;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 3: Events Summary -->
+            <div class="tab-content" id="tab-events">
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                    <input type="text" class="form-input" id="evtSearch" placeholder="Search by name, hall..." oninput="renderEventsSummary()" style="flex:1">
+                    <select class="form-input" id="evtFilter" onchange="renderEventsSummary()" style="width:auto">
+                        <option value="">All Types</option>
+                        <option value="Wedding">Wedding</option>
+                        <option value="Bar Mitzvah">Bar Mitzvah</option>
+                        <option value="Sheva Brachot">Sheva Brachot</option>
+                        <option value="Vort">Vort</option>
+                        <option value="Shabbat">Shabbat</option>
+                        <option value="Aufruf">Aufruf</option>
+                    </select>
+                </div>
+                <div id="evtList" style="max-height:55vh;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 4: Event Details -->
+            <div class="tab-content" id="tab-details">
+                <div class="modal-info" style="margin-bottom:12px">🔍 Select an event from the <strong>Events Summary</strong> tab to see full details, or browse below.</div>
+                <div id="detailsList" style="max-height:60vh;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 5: Raw Data -->
+            <div class="tab-content" id="tab-rawdata">
+                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                    <input type="text" class="form-input" id="rawSearch" placeholder="Search dishes..." oninput="renderRawData()" style="flex:1">
+                    <span id="rawCount" style="font-size:12px;color:var(--text-muted);white-space:nowrap"></span>
+                </div>
+                <div id="rawList" style="max-height:55vh;overflow-y:auto"></div>
             </div>
         </div>
-        <div class="modal-body" id="detailBody"></div>
     </div>
 </div>
 
@@ -687,171 +779,500 @@ function saveEvent() {
     });
 }
 
-/* ═══ HISTORY ═══ */
+/* ═══ HISTORY / DATA CENTER ═══ */
+var allEvents = []; // cached from Firebase
+
 function openHistory() {
     document.getElementById('historyModal').classList.add('show');
-    renderHistory();
+    loadAllEvents();
 }
 function closeHistory() { document.getElementById('historyModal').classList.remove('show'); }
 
-function renderHistory() {
-    var listEl = document.getElementById('historyList');
-    var statsEl = document.getElementById('historyStats');
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+    // Render tab content
+    if (tabId === 'dashboard') renderDashboard();
+    if (tabId === 'inventory') renderInventory();
+    if (tabId === 'events') renderEventsSummary();
+    if (tabId === 'details') renderDetails();
+    if (tabId === 'rawdata') renderRawData();
+}
+
+function loadAllEvents() {
     if (!db) {
-        listEl.innerHTML = '<p style="text-align:center;color:#999;padding:20px">Firebase not connected.<br>Go to Settings → Firebase Setup.</p>';
-        statsEl.innerHTML = '';
+        document.getElementById('tab-dashboard').innerHTML = '<p style="text-align:center;color:#999;padding:20px">Firebase not connected. Go to Settings → Firebase Setup.</p>';
+        return;
+    }
+    db.collection('events').orderBy('date', 'desc').get().then(function(snapshot) {
+        allEvents = [];
+        snapshot.forEach(function(doc) { allEvents.push(Object.assign({ id: doc.id }, doc.data())); });
+        renderDashboard();
+    }).catch(function(err) {
+        document.getElementById('dashStats').innerHTML = '<p style="color:var(--error)">Error: ' + err.message + '</p>';
+    });
+}
+
+/* ═══ TAB 1: DASHBOARD ═══ */
+function renderDashboard() {
+    if (!allEvents.length) {
+        document.getElementById('dashStats').innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;padding:20px">No events yet.</p>';
         return;
     }
 
-    var searchTerm = (document.getElementById('historySearch').value || '').toLowerCase();
-    var filterType = document.getElementById('historyFilter').value;
+    var totalEvents = allEvents.length;
+    var totalItems = 0, totalRemained = 0, totalFinished = 0;
+    var dishWaste = {}, typeStats = {}, hallStats = {}, monthStats = {};
 
-    db.collection('events').orderBy('date', 'desc').limit(100).get().then(function(snapshot) {
-        var events = [];
-        snapshot.forEach(function(doc) { events.push(Object.assign({ id: doc.id }, doc.data())); });
+    allEvents.forEach(function(ev) {
+        var remained = ev.remainedCount || 0;
+        var finished = ev.finishedCount || 0;
+        totalRemained += remained;
+        totalFinished += finished;
+        totalItems += (ev.itemCount || 0);
 
-        // Apply filters
-        if (filterType) events = events.filter(function(e) { return e.eventType === filterType; });
-        if (searchTerm) events = events.filter(function(e) {
-            return (e.eventOwner || '').toLowerCase().includes(searchTerm) ||
-                   (e.hallName || '').toLowerCase().includes(searchTerm) ||
-                   (e.date || '').includes(searchTerm) ||
-                   (e.items || []).some(function(i) { return i.dishName.toLowerCase().includes(searchTerm); });
-        });
+        // By type
+        var t = ev.eventType || 'Other';
+        if (!typeStats[t]) typeStats[t] = { count: 0, remained: 0, items: 0 };
+        typeStats[t].count++;
+        typeStats[t].remained += remained;
+        typeStats[t].items += (ev.itemCount || 0);
 
-        // Stats
-        var totalEvents = events.length;
-        var totalRemained = events.reduce(function(s, e) { return s + (e.remainedCount || 0); }, 0);
-        var totalFinished = events.reduce(function(s, e) { return s + (e.finishedCount || 0); }, 0);
-        statsEl.innerHTML =
-            '<div style="background:var(--bg);padding:10px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--primary)">' + totalEvents + '</div><div style="font-size:11px;color:var(--text-muted)">Events</div></div>' +
-            '<div style="background:var(--remained-bg);padding:10px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:700;color:#8b6914">' + totalRemained + '</div><div style="font-size:11px;color:#8b6914">Remained</div></div>' +
-            '<div style="background:var(--finished-bg);padding:10px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--finished)">' + totalFinished + '</div><div style="font-size:11px;color:var(--finished)">Finished</div></div>';
+        // By hall
+        var h = ev.hallName || 'Unknown';
+        if (!hallStats[h]) hallStats[h] = { count: 0, remained: 0, items: 0 };
+        hallStats[h].count++;
+        hallStats[h].remained += remained;
+        hallStats[h].items += (ev.itemCount || 0);
 
-        if (events.length === 0) {
-            listEl.innerHTML = '<p style="text-align:center;color:#999;padding:20px">No events found.</p>';
-            return;
+        // By month
+        var m = (ev.date || '').substring(0, 7); // YYYY-MM
+        if (m) {
+            if (!monthStats[m]) monthStats[m] = { count: 0, remained: 0, items: 0 };
+            monthStats[m].count++;
+            monthStats[m].remained += remained;
+            monthStats[m].items += (ev.itemCount || 0);
         }
 
-        listEl.innerHTML = events.map(function(ev) {
-            var pct = ev.itemCount > 0 ? Math.round((ev.remainedCount / ev.itemCount) * 100) : 0;
-            var pctColor = pct > 50 ? '#c0392b' : pct > 25 ? '#e67e22' : '#3a7d4f';
-            return '<div onclick="openEventDetail(\'' + ev.id + '\')" style="padding:14px;background:white;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-                '<strong style="color:var(--primary)">' + esc(ev.eventOwner || 'Unknown') + '</strong>' +
-                '<span style="font-size:12px;color:var(--text-muted)">' + esc(ev.date || '') + '</span></div>' +
-                '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-                '<span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:12px;font-weight:600">' + esc(ev.eventType || '') + '</span>' +
-                '<span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:12px">' + esc(ev.hallName || '') + '</span>' +
-                '<span style="font-size:11px;padding:2px 8px;background:var(--bg);border-radius:12px">' + (ev.itemCount || 0) + ' items</span>' +
-                '<span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700;color:' + pctColor + ';background:' + (pct > 50 ? 'var(--error-bg)' : pct > 25 ? '#fff5e6' : 'var(--success-bg)') + '">' + pct + '% remained</span>' +
-                '</div></div>';
-        }).join('');
-    }).catch(function(err) {
-        listEl.innerHTML = '<p style="text-align:center;color:#c0392b;padding:20px">Error: ' + err.message + '</p>';
+        // Per dish
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                var dn = item.dishName || 'Unknown';
+                if (!dishWaste[dn]) dishWaste[dn] = { count: 0, totalAmt: 0 };
+                dishWaste[dn].count++;
+                dishWaste[dn].totalAmt += parseInt(item.amountRemained) || 0;
+            }
+        });
     });
+
+    var wastePct = totalItems > 0 ? Math.round((totalRemained / totalItems) * 100) : 0;
+
+    // Stats cards
+    document.getElementById('dashStats').innerHTML =
+        '<div class="stat-card"><div class="stat-val">' + totalEvents + '</div><div class="stat-label">Total Events</div></div>' +
+        '<div class="stat-card"><div class="stat-val">' + totalItems + '</div><div class="stat-label">Total Items</div></div>' +
+        '<div class="stat-card warn"><div class="stat-val">' + totalRemained + '</div><div class="stat-label">Remained</div></div>' +
+        '<div class="stat-card good"><div class="stat-val">' + totalFinished + '</div><div class="stat-label">Finished</div></div>' +
+        '<div class="stat-card accent"><div class="stat-val">' + wastePct + '%</div><div class="stat-label">Waste Rate</div></div>';
+
+    // Top 10 wasted dishes
+    var dishArr = Object.keys(dishWaste).map(function(d) {
+        return { name: d, count: dishWaste[d].count, total: dishWaste[d].totalAmt, avg: dishWaste[d].count > 0 ? Math.round(dishWaste[d].totalAmt / dishWaste[d].count) : 0 };
+    }).sort(function(a, b) { return b.total - a.total; }).slice(0, 10);
+
+    var topHtml = '<table class="data-table"><thead><tr><th>#</th><th>Dish</th><th>Times</th><th>Total Qty</th><th>Avg/Event</th></tr></thead><tbody>';
+    dishArr.forEach(function(d, i) {
+        topHtml += '<tr><td><span class="rank-badge">' + (i + 1) + '</span></td><td style="font-weight:600">' + esc(d.name) + '</td><td>' + d.count + '</td><td style="color:var(--error);font-weight:700">' + d.total + '</td><td>' + d.avg + '</td></tr>';
+    });
+    topHtml += '</tbody></table>';
+    if (!dishArr.length) topHtml = '<p style="color:#999;text-align:center;padding:16px">No waste data yet.</p>';
+    document.getElementById('dashTopWasted').innerHTML = topHtml;
+
+    // By event type
+    var typeHtml = '';
+    Object.keys(typeStats).sort().forEach(function(t) {
+        var s = typeStats[t];
+        var pct = s.items > 0 ? Math.round((s.remained / s.items) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        typeHtml += '<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:12px">' +
+            '<span style="font-weight:600">' + esc(t) + '</span>' +
+            '<span>' + s.count + ' events · <strong style="color:' + pctColor + '">' + pct + '%</strong></span></div>';
+    });
+    document.getElementById('dashByType').innerHTML = typeHtml || '<p style="color:#999;font-size:12px">No data</p>';
+
+    // By hall
+    var hallHtml = '';
+    Object.keys(hallStats).sort().forEach(function(h) {
+        var s = hallStats[h];
+        var pct = s.items > 0 ? Math.round((s.remained / s.items) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        hallHtml += '<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:12px">' +
+            '<span style="font-weight:600">' + esc(h) + '</span>' +
+            '<span>' + s.count + ' events · <strong style="color:' + pctColor + '">' + pct + '%</strong></span></div>';
+    });
+    document.getElementById('dashByHall').innerHTML = hallHtml || '<p style="color:#999;font-size:12px">No data</p>';
+
+    // Monthly trends
+    var months = Object.keys(monthStats).sort();
+    var monthHtml = '<table class="data-table"><thead><tr><th>Month</th><th>Events</th><th>Remained</th><th>Waste %</th><th>Trend</th></tr></thead><tbody>';
+    months.forEach(function(m, i) {
+        var s = monthStats[m];
+        var pct = s.items > 0 ? Math.round((s.remained / s.items) * 100) : 0;
+        var prevPct = i > 0 ? (function() { var ps = monthStats[months[i - 1]]; return ps.items > 0 ? Math.round((ps.remained / ps.items) * 100) : 0; })() : pct;
+        var trend = i === 0 ? '—' : pct > prevPct ? '📈 ↑' : pct < prevPct ? '📉 ↓' : '→';
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        monthHtml += '<tr><td style="font-weight:600">' + m + '</td><td>' + s.count + '</td><td>' + s.remained + '</td><td style="color:' + pctColor + ';font-weight:700">' + pct + '%</td><td>' + trend + '</td></tr>';
+    });
+    monthHtml += '</tbody></table>';
+    if (!months.length) monthHtml = '<p style="color:#999;text-align:center;padding:16px">No data yet.</p>';
+    document.getElementById('dashMonthly').innerHTML = monthHtml;
 }
 
-function openEventDetail(eventId) {
-    currentDetailEventId = eventId;
-    if (!db) return;
-    db.collection('events').doc(eventId).get().then(function(doc) {
-        if (!doc.exists) return;
-        var ev = doc.data();
-        document.getElementById('detailTitle').textContent = esc(ev.eventOwner || 'Event') + ' — ' + esc(ev.date || '');
-        var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
-            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Type:</strong> ' + esc(ev.eventType) + '</div>' +
-            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Hall:</strong> ' + esc(ev.hallName) + '</div>' +
-            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Guests:</strong> ' + esc(ev.eventSize) + '</div>' +
-            '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Phone:</strong> ' + esc(ev.phone) + '</div></div>';
+/* ═══ TAB 2: CURRENT INVENTORY ═══ */
+function renderInventory() {
+    var days = parseInt(document.getElementById('invDays').value) || 7;
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    var cutoffStr = cutoff.toISOString().split('T')[0];
 
-        html += '<h3 style="font-family:Playfair Display,serif;color:var(--primary);margin-bottom:12px">Menu Items (' + (ev.items || []).length + ')</h3>';
+    var recentEvents = allEvents.filter(function(ev) { return (ev.date || '') >= cutoffStr; });
+    var remainedItems = [];
+    var totalQty = 0;
+
+    recentEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                var qty = parseInt(item.amountRemained) || 0;
+                totalQty += qty;
+                remainedItems.push({
+                    dish: item.dishName,
+                    qty: qty,
+                    event: ev.eventOwner || 'Unknown',
+                    date: ev.date || '',
+                    hall: ev.hallName || '',
+                    reason: item.reason || '',
+                    notes: item.notes || ''
+                });
+            }
+        });
+    });
+
+    // Group by dish
+    var grouped = {};
+    remainedItems.forEach(function(item) {
+        var key = item.dish;
+        if (!grouped[key]) grouped[key] = { totalQty: 0, events: [] };
+        grouped[key].totalQty += item.qty;
+        grouped[key].events.push(item);
+    });
+
+    document.getElementById('invStats').innerHTML =
+        '<div class="stat-card"><div class="stat-val">' + recentEvents.length + '</div><div class="stat-label">Recent Events</div></div>' +
+        '<div class="stat-card warn"><div class="stat-val">' + remainedItems.length + '</div><div class="stat-label">Items Remained</div></div>' +
+        '<div class="stat-card accent"><div class="stat-val">' + totalQty + '</div><div class="stat-label">Total Qty Left</div></div>';
+
+    if (!remainedItems.length) {
+        document.getElementById('invList').innerHTML = '<p style="text-align:center;color:var(--success);padding:20px">🎉 No leftover items in the last ' + days + ' days!</p>';
+        return;
+    }
+
+    var sortedDishes = Object.keys(grouped).sort(function(a, b) { return grouped[b].totalQty - grouped[a].totalQty; });
+    var html = '';
+    sortedDishes.forEach(function(dish) {
+        var g = grouped[dish];
+        var sources = g.events.map(function(e) { return esc(e.event) + ' (' + e.date + ')'; }).join(', ');
+        html += '<div class="inv-item">' +
+            '<div><div class="inv-dish">' + esc(dish) + '</div>' +
+            '<div class="inv-meta">From: ' + sources + '</div>' +
+            (g.events[0].reason ? '<div class="inv-meta" style="color:var(--accent)">Reason: ' + esc(g.events[0].reason) + '</div>' : '') +
+            '</div>' +
+            '<div class="inv-amount">' + g.totalQty + '</div></div>';
+    });
+    document.getElementById('invList').innerHTML = html;
+}
+
+/* ═══ TAB 3: EVENTS SUMMARY ═══ */
+function renderEventsSummary() {
+    var search = (document.getElementById('evtSearch').value || '').toLowerCase();
+    var filter = document.getElementById('evtFilter').value;
+
+    var events = allEvents.slice();
+    if (filter) events = events.filter(function(e) { return e.eventType === filter; });
+    if (search) events = events.filter(function(e) {
+        return (e.eventOwner || '').toLowerCase().includes(search) ||
+               (e.hallName || '').toLowerCase().includes(search) ||
+               (e.date || '').includes(search);
+    });
+
+    if (!events.length) {
+        document.getElementById('evtList').innerHTML = '<p style="text-align:center;color:#999;padding:20px">No events found.</p>';
+        return;
+    }
+
+    var html = '<table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Hall</th><th>Client</th><th>Guests</th><th>Items</th><th>Rem.</th><th>Fin.</th><th>Waste%</th></tr></thead><tbody>';
+    events.forEach(function(ev) {
+        var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        html += '<tr style="cursor:pointer" onclick="showDetailInline(\'' + ev.id + '\')">' +
+            '<td style="white-space:nowrap">' + esc(ev.date) + '</td>' +
+            '<td>' + esc(ev.eventType) + '</td>' +
+            '<td>' + esc(ev.hallName) + '</td>' +
+            '<td style="font-weight:600">' + esc(ev.eventOwner) + '</td>' +
+            '<td>' + esc(ev.eventSize) + '</td>' +
+            '<td>' + (ev.itemCount || 0) + '</td>' +
+            '<td style="color:var(--error);font-weight:600">' + (ev.remainedCount || 0) + '</td>' +
+            '<td style="color:var(--success)">' + (ev.finishedCount || 0) + '</td>' +
+            '<td style="color:' + pctColor + ';font-weight:700">' + pct + '%</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('evtList').innerHTML = html;
+}
+
+function showDetailInline(eventId) {
+    // Switch to details tab and show that event
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab')[3].classList.add('active');
+    document.getElementById('tab-details').classList.add('active');
+    renderSingleDetail(eventId);
+}
+
+/* ═══ TAB 4: EVENT DETAILS ═══ */
+function renderDetails() {
+    if (!allEvents.length) {
+        document.getElementById('detailsList').innerHTML = '<p style="text-align:center;color:#999;padding:20px">No events yet.</p>';
+        return;
+    }
+    // Show list of all events, expandable
+    var html = '';
+    allEvents.forEach(function(ev) {
+        var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        html += '<div style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden">' +
+            '<div onclick="toggleDetail(this)" style="padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:white">' +
+            '<div><strong style="color:var(--primary)">' + esc(ev.eventOwner || 'Unknown') + '</strong>' +
+            '<span style="font-size:12px;color:var(--text-muted);margin-left:8px">' + esc(ev.date) + ' · ' + esc(ev.eventType) + ' · ' + esc(ev.hallName) + '</span></div>' +
+            '<span style="font-size:12px;font-weight:700;color:' + pctColor + '">' + pct + '% ▾</span></div>' +
+            '<div class="detail-expand" style="display:none;padding:12px 14px;background:var(--bg);border-top:1px solid var(--border)">';
+
         (ev.items || []).forEach(function(item) {
             var sc = item.status === 'Remained' ? 'remained' : item.status === 'Finished' ? 'finished' : 'unknown';
-            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;margin-bottom:6px;background:' + (sc === 'remained' ? 'var(--remained-bg)' : sc === 'finished' ? 'var(--finished-bg)' : 'var(--bg)') + '">' +
-                '<span style="font-weight:600;font-size:14px">' + esc(item.dishName) + '</span>' +
+            var bg = sc === 'remained' ? 'var(--remained-bg)' : sc === 'finished' ? 'var(--finished-bg)' : 'white';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:6px;margin-bottom:4px;background:' + bg + '">' +
+                '<span style="font-weight:600;font-size:13px">' + esc(item.dishName) + '</span>' +
                 '<div style="display:flex;align-items:center;gap:8px">' +
                 (item.amountRemained ? '<strong style="color:var(--accent)">' + esc(item.amountRemained) + '</strong>' : '') +
-                '<span class="status-tag ' + sc + '">' + item.status + '</span></div></div>';
+                '<span class="status-tag ' + sc + '" style="font-size:10px">' + item.status + '</span></div></div>';
         });
 
-        document.getElementById('detailBody').innerHTML = html;
-        document.getElementById('eventDetailModal').classList.add('show');
+        // Delete button
+        html += '<button type="button" onclick="deleteEventFromList(\'' + ev.id + '\')" style="margin-top:8px;padding:6px 14px;background:var(--error);color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑️ Delete Event</button>';
+        html += '</div></div>';
     });
+    document.getElementById('detailsList').innerHTML = html;
 }
 
-function deleteEvent() {
-    if (!currentDetailEventId || !db) return;
+function renderSingleDetail(eventId) {
+    var ev = allEvents.find(function(e) { return e.id === eventId; });
+    if (!ev) { renderDetails(); return; }
+
+    var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) : 0;
+    var html = '<div style="padding:14px;background:white;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Client:</strong> ' + esc(ev.eventOwner) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Date:</strong> ' + esc(ev.date) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Type:</strong> ' + esc(ev.eventType) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Hall:</strong> ' + esc(ev.hallName) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Guests:</strong> ' + esc(ev.eventSize) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Waste:</strong> ' + pct + '%</div></div>';
+
+    (ev.items || []).forEach(function(item) {
+        var sc = item.status === 'Remained' ? 'remained' : item.status === 'Finished' ? 'finished' : 'unknown';
+        var bg = sc === 'remained' ? 'var(--remained-bg)' : sc === 'finished' ? 'var(--finished-bg)' : 'white';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:6px;margin-bottom:4px;background:' + bg + '">' +
+            '<div><span style="font-weight:600;font-size:13px">' + esc(item.dishName) + '</span>' +
+            (item.reason ? '<div style="font-size:11px;color:var(--text-muted)">Reason: ' + esc(item.reason) + '</div>' : '') +
+            (item.notes ? '<div style="font-size:11px;color:var(--text-muted)">Notes: ' + esc(item.notes) + '</div>' : '') +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px">' +
+            (item.amountRemained ? '<strong style="color:var(--accent)">' + esc(item.amountRemained) + '</strong>' : '') +
+            '<span class="status-tag ' + sc + '" style="font-size:10px">' + item.status + '</span></div></div>';
+    });
+
+    html += '<div style="margin-top:12px"><button type="button" onclick="renderDetails()" style="padding:8px 16px;background:var(--primary);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">← Back to all events</button>' +
+        ' <button type="button" onclick="deleteEventFromList(\'' + ev.id + '\')" style="padding:8px 16px;background:var(--error);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑️ Delete</button></div></div>';
+
+    document.getElementById('detailsList').innerHTML = html;
+}
+
+function toggleDetail(el) {
+    var expand = el.nextElementSibling;
+    expand.style.display = expand.style.display === 'none' ? 'block' : 'none';
+}
+
+function deleteEventFromList(eventId) {
     if (!confirm('Delete this event permanently?')) return;
-    db.collection('events').doc(currentDetailEventId).delete().then(function() {
-        document.getElementById('eventDetailModal').classList.remove('show');
+    if (!db) return;
+    db.collection('events').doc(eventId).delete().then(function() {
+        allEvents = allEvents.filter(function(e) { return e.id !== eventId; });
+        renderDetails();
+        renderDashboard();
         showAlert('success', 'Event deleted.');
-        renderHistory();
-    }).catch(function(err) {
-        showAlert('error', 'Delete failed: ' + err.message);
-    });
+    }).catch(function(err) { showAlert('error', 'Delete failed: ' + err.message); });
 }
 
-/* ═══ EXPORT TO EXCEL ═══ */
-function exportToExcel() {
-    if (!db) { showAlert('error', 'Firebase not connected.'); return; }
+/* ═══ TAB 5: RAW DATA ═══ */
+function renderRawData() {
+    var search = (document.getElementById('rawSearch').value || '').toLowerCase();
+    var rows = [];
 
-    db.collection('events').orderBy('date', 'desc').get().then(function(snapshot) {
-        var eventsData = [];
-        var itemsData = [];
-
-        snapshot.forEach(function(doc) {
-            var ev = doc.data();
-            eventsData.push({
-                'Date': ev.date,
-                'Event Type': ev.eventType,
-                'Hall': ev.hallName,
-                'Guests': ev.eventSize,
-                'Client': ev.eventOwner,
-                'Start Time': ev.startTime,
-                'Phone': ev.phone,
-                'Total Items': ev.itemCount || 0,
-                'Remained': ev.remainedCount || 0,
-                'Finished': ev.finishedCount || 0,
-                'Remained %': ev.itemCount > 0 ? Math.round((ev.remainedCount / ev.itemCount) * 100) + '%' : '0%'
-            });
-
-            (ev.items || []).forEach(function(item) {
-                itemsData.push({
-                    'Date': ev.date,
-                    'Event Type': ev.eventType,
-                    'Hall': ev.hallName,
-                    'Client': ev.eventOwner,
-                    'Dish Name': item.dishName,
-                    'Status': item.status,
-                    'Amount Remained': item.amountRemained,
-                    'Reason': item.reason,
-                    'Notes': item.notes
-                });
+    allEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            rows.push({
+                date: ev.date || '',
+                eventType: ev.eventType || '',
+                hallName: ev.hallName || '',
+                eventOwner: ev.eventOwner || '',
+                eventSize: ev.eventSize || '',
+                dishName: item.dishName || '',
+                status: item.status || '',
+                amountRemained: item.amountRemained || '',
+                reason: item.reason || '',
+                notes: item.notes || ''
             });
         });
-
-        if (eventsData.length === 0) {
-            showAlert('error', 'No events to export.'); return;
-        }
-
-        var wb = XLSX.utils.book_new();
-        var ws1 = XLSX.utils.json_to_sheet(eventsData);
-        var ws2 = XLSX.utils.json_to_sheet(itemsData);
-
-        // Set column widths
-        ws1['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 10 }, { wch: 18 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
-        ws2['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 30 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 20 }];
-
-        XLSX.utils.book_append_sheet(wb, ws1, 'Events Summary');
-        XLSX.utils.book_append_sheet(wb, ws2, 'Menu Items');
-
-        var fileName = 'Ateres_Golda_Events_' + new Date().toISOString().split('T')[0] + '.xlsx';
-        XLSX.writeFile(wb, fileName);
-        showAlert('success', 'Exported ' + eventsData.length + ' events to ' + fileName);
-    }).catch(function(err) {
-        showAlert('error', 'Export failed: ' + err.message);
     });
+
+    if (search) {
+        rows = rows.filter(function(r) {
+            return r.dishName.toLowerCase().includes(search) ||
+                   r.eventOwner.toLowerCase().includes(search) ||
+                   r.hallName.toLowerCase().includes(search) ||
+                   r.reason.toLowerCase().includes(search);
+        });
+    }
+
+    document.getElementById('rawCount').textContent = rows.length + ' rows';
+
+    if (!rows.length) {
+        document.getElementById('rawList').innerHTML = '<p style="text-align:center;color:#999;padding:20px">No data found.</p>';
+        return;
+    }
+
+    var html = '<table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Hall</th><th>Client</th><th>Dish</th><th>Status</th><th>Qty</th><th>Reason</th></tr></thead><tbody>';
+    rows.forEach(function(r) {
+        var sc = r.status === 'Remained' ? 'color:var(--error);font-weight:600' : r.status === 'Finished' ? 'color:var(--success)' : '';
+        html += '<tr><td style="white-space:nowrap;font-size:11px">' + esc(r.date) + '</td>' +
+            '<td style="font-size:11px">' + esc(r.eventType) + '</td>' +
+            '<td style="font-size:11px">' + esc(r.hallName) + '</td>' +
+            '<td style="font-size:11px;font-weight:600">' + esc(r.eventOwner) + '</td>' +
+            '<td style="font-weight:600">' + esc(r.dishName) + '</td>' +
+            '<td style="' + sc + '">' + r.status + '</td>' +
+            '<td style="font-weight:700;color:var(--accent)">' + esc(r.amountRemained) + '</td>' +
+            '<td style="font-size:11px">' + esc(r.reason) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('rawList').innerHTML = html;
+}
+
+/* ═══ EXPORT TO EXCEL (5 SHEETS) ═══ */
+function exportToExcel() {
+    if (!allEvents.length) { showAlert('error', 'No events to export.'); return; }
+
+    // Sheet 1: Dashboard
+    var dishWaste = {}, typeStats = {}, hallStats = {}, monthStats = {};
+    var totalItems = 0, totalRemained = 0;
+    allEvents.forEach(function(ev) {
+        totalRemained += (ev.remainedCount || 0);
+        totalItems += (ev.itemCount || 0);
+        var t = ev.eventType || 'Other';
+        if (!typeStats[t]) typeStats[t] = { count: 0, remained: 0, items: 0 };
+        typeStats[t].count++; typeStats[t].remained += (ev.remainedCount || 0); typeStats[t].items += (ev.itemCount || 0);
+        var h = ev.hallName || 'Unknown';
+        if (!hallStats[h]) hallStats[h] = { count: 0, remained: 0, items: 0 };
+        hallStats[h].count++; hallStats[h].remained += (ev.remainedCount || 0); hallStats[h].items += (ev.itemCount || 0);
+        var m = (ev.date || '').substring(0, 7);
+        if (m) { if (!monthStats[m]) monthStats[m] = { count: 0, remained: 0, items: 0 }; monthStats[m].count++; monthStats[m].remained += (ev.remainedCount || 0); monthStats[m].items += (ev.itemCount || 0); }
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                var dn = item.dishName;
+                if (!dishWaste[dn]) dishWaste[dn] = { count: 0, totalAmt: 0 };
+                dishWaste[dn].count++; dishWaste[dn].totalAmt += parseInt(item.amountRemained) || 0;
+            }
+        });
+    });
+
+    var dashData = [['📊 DASHBOARD ANALYTICS'], [''], ['Total Events', allEvents.length], ['Total Items', totalItems], ['Total Remained', totalRemained], ['Waste Rate', totalItems > 0 ? Math.round((totalRemained / totalItems) * 100) + '%' : '0%'],
+        [''], ['TOP 10 MOST WASTED DISHES'], ['Dish', 'Times Remained', 'Total Qty Wasted', 'Avg/Event']];
+    Object.keys(dishWaste).map(function(d) { return { name: d, count: dishWaste[d].count, total: dishWaste[d].totalAmt }; })
+        .sort(function(a, b) { return b.total - a.total; }).slice(0, 10)
+        .forEach(function(d) { dashData.push([d.name, d.count, d.total, d.count > 0 ? Math.round(d.total / d.count) : 0]); });
+    dashData.push([''], ['WASTE BY EVENT TYPE'], ['Type', 'Events', 'Items Remained', 'Waste %']);
+    Object.keys(typeStats).forEach(function(t) { var s = typeStats[t]; dashData.push([t, s.count, s.remained, s.items > 0 ? Math.round((s.remained / s.items) * 100) + '%' : '0%']); });
+    dashData.push([''], ['WASTE BY HALL'], ['Hall', 'Events', 'Items Remained', 'Waste %']);
+    Object.keys(hallStats).forEach(function(h) { var s = hallStats[h]; dashData.push([h, s.count, s.remained, s.items > 0 ? Math.round((s.remained / s.items) * 100) + '%' : '0%']); });
+    dashData.push([''], ['MONTHLY TRENDS'], ['Month', 'Events', 'Remained', 'Waste %']);
+    Object.keys(monthStats).sort().forEach(function(m) { var s = monthStats[m]; dashData.push([m, s.count, s.remained, s.items > 0 ? Math.round((s.remained / s.items) * 100) + '%' : '0%']); });
+
+    // Sheet 2: Current Inventory
+    var invData = [['Dish', 'Total Qty', 'From Event', 'Date', 'Hall', 'Reason', 'Notes']];
+    var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+    var cutoffStr = cutoff.toISOString().split('T')[0];
+    allEvents.filter(function(ev) { return (ev.date || '') >= cutoffStr; }).forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                invData.push([item.dishName, item.amountRemained || '', ev.eventOwner || '', ev.date || '', ev.hallName || '', item.reason || '', item.notes || '']);
+            }
+        });
+    });
+
+    // Sheet 3: Events Summary
+    var evtData = [['Date', 'Event Type', 'Hall', 'Client', 'Guests', 'Start Time', 'Phone', 'Total Items', 'Remained', 'Finished', 'Waste %']];
+    allEvents.forEach(function(ev) {
+        var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) + '%' : '0%';
+        evtData.push([ev.date, ev.eventType, ev.hallName, ev.eventOwner, ev.eventSize, ev.startTime || '', ev.phone || '', ev.itemCount || 0, ev.remainedCount || 0, ev.finishedCount || 0, pct]);
+    });
+
+    // Sheet 4: Event Details
+    var detData = [['Date', 'Client', 'Event Type', 'Hall', 'Guests', 'Dish', 'Status', 'Qty Remained', 'Reason', 'Notes']];
+    allEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            detData.push([ev.date, ev.eventOwner, ev.eventType, ev.hallName, ev.eventSize, item.dishName, item.status, item.amountRemained || '', item.reason || '', item.notes || '']);
+        });
+    });
+
+    // Sheet 5: Raw Menu Data
+    var rawData = [['Date', 'Event Type', 'Hall', 'Client', 'Guests', 'Start Time', 'Phone', 'Dish Name', 'Status', 'Amount Remained', 'Reason', 'Notes']];
+    allEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            rawData.push([ev.date, ev.eventType, ev.hallName, ev.eventOwner, ev.eventSize, ev.startTime || '', ev.phone || '', item.dishName, item.status, item.amountRemained || '', item.reason || '', item.notes || '']);
+        });
+    });
+
+    var wb = XLSX.utils.book_new();
+    var ws1 = XLSX.utils.aoa_to_sheet(dashData);
+    var ws2 = XLSX.utils.aoa_to_sheet(invData);
+    var ws3 = XLSX.utils.aoa_to_sheet(evtData);
+    var ws4 = XLSX.utils.aoa_to_sheet(detData);
+    var ws5 = XLSX.utils.aoa_to_sheet(rawData);
+
+    ws1['!cols'] = [{ wch: 30 }, { wch: 14 }, { wch: 16 }, { wch: 12 }];
+    ws2['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 20 }];
+    ws3['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+    ws4['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 10 }, { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 20 }];
+    ws5['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 30 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 20 }];
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'Dashboard');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Current Inventory');
+    XLSX.utils.book_append_sheet(wb, ws3, 'Events Summary');
+    XLSX.utils.book_append_sheet(wb, ws4, 'Event Details');
+    XLSX.utils.book_append_sheet(wb, ws5, 'Menu Data');
+
+    var fileName = 'Ateres_Golda_' + new Date().toISOString().split('T')[0] + '.xlsx';
+    XLSX.writeFile(wb, fileName);
+    showAlert('success', '📥 Exported ' + allEvents.length + ' events (5 sheets) → ' + fileName);
 }
 
 /* ═══ OFFLINE DETECTION ═══ */
@@ -1095,6 +1516,8 @@ function handleFile(file) {
             document.getElementById('scanButton').style.display = '';
             document.getElementById('scanHint').style.display = '';
             autoAlign();
+            // Scroll to make scan button visible
+            setTimeout(function() { document.getElementById('scanButton').scrollIntoView({behavior:'smooth', block:'center'}); }, 300);
         };
         img.onerror = function() { showAlert('error', 'Could not load image.'); };
         img.src = e.target.result;
