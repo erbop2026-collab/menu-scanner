@@ -355,8 +355,8 @@
         </div>
 
         <!-- Scan button + hint ABOVE the preview -->
-        <button type="button" class="btn-primary" id="scanButton" style="display:none;margin-top:16px;font-size:17px;padding:18px" onclick="scanMenu()">🔍 Scan Highlighted Items</button>
-        <p id="scanHint" style="display:none;text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">🟡 Yellow = Remained &nbsp; 🔴 Red/Purple = Finished &nbsp; ⬜ No highlight = Ignored</p>
+        <button type="button" class="btn-primary" id="scanButton" style="display:none;margin-top:16px;font-size:17px;padding:18px" onclick="scanMenu()">🧠 Scan with AI</button>
+        <p id="scanHint" style="display:none;text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">Claude AI will read the menu, detect ✅/❌ marks, and extract all items automatically</p>
 
         <div class="preview-section" id="previewSection">
             <div class="preview-file-name">
@@ -576,6 +576,22 @@
         </div>
         <div class="modal-body">
             <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🧠 Claude Vision (AI Scanner)</div>
+                <div class="modal-info">Powers the menu scanning. Requires an Anthropic API key and a deployed proxy script.</div>
+                <div id="claudeStatus" style="padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;background:#fff3e0;color:#e65100">⏳ Not configured</div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Anthropic API Key</label>
+                    <input type="password" class="form-input" id="claudeApiKey" placeholder="sk-ant-api03-...">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Vision Proxy URL</label>
+                    <input type="url" class="form-input" id="claudeProxyUrl" placeholder="https://script.google.com/macros/s/.../exec">
+                    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Deploy the proxy script in Google Apps Script and paste the URL here</p>
+                </div>
+                <button type="button" class="btn-reset-modal" style="background:var(--success)" onclick="saveClaudeConfig()">💾 Save & Test</button>
+            </div>
+
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
                 <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🔒 Security</div>
                 <div style="margin-bottom:10px">
                     <label class="form-label">Current PIN</label>
@@ -648,7 +664,6 @@
 
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -1570,307 +1585,149 @@ function resetTransform() {
 
 function scanMenu() {
     if (!originalImage) { showAlert('error', 'Select an image first.'); return; }
+
+    var apiKey = localStorage.getItem('claudeApiKey') || '';
+    var proxyUrl = localStorage.getItem('claudeProxyUrl') || '';
+
+    if (!apiKey || !proxyUrl) {
+        showAlert('error', '⚙️ Set up Claude Vision in Settings first (API Key + Proxy URL).');
+        return;
+    }
+
     document.getElementById('uploadCard').style.display = 'none';
+    document.getElementById('actionBar').style.display = 'none';
     document.getElementById('loadingSection').classList.add('show');
+    document.getElementById('progressLabel').textContent = 'Preparing image...';
+    document.getElementById('progressFill').style.width = '10%';
     hideAlerts();
 
-    // Create a CLEAN canvas (no brightness/contrast) for color analysis
-    var colorCanvas = document.createElement('canvas');
-    var colorCtx = colorCanvas.getContext('2d', {willReadFrequently: true});
-    var previewCanvas = document.getElementById('previewCanvas');
-    colorCanvas.width = previewCanvas.width;
-    colorCanvas.height = previewCanvas.height;
+    // Create high-res canvas (max 1600px wide for good readability)
+    var scanCanvas = document.createElement('canvas');
+    var scanCtx = scanCanvas.getContext('2d');
+    var maxW = 1600;
+    var scale = Math.min(1, maxW / originalImage.width);
+    scanCanvas.width = Math.round(originalImage.width * scale);
+    scanCanvas.height = Math.round(originalImage.height * scale);
 
-    // Draw original image at same position/rotation - NO filters (pure color analysis)
+    // Apply brightness/contrast settings for cleaner image
+    var brightness = parseFloat(document.getElementById('brightnessSlider').value) || 100;
+    var contrast = parseFloat(document.getElementById('contrastSlider').value) || 100;
     var rotation = parseFloat(document.getElementById('rotationSlider').value) || 0;
-    var scale = Math.min(1, 600 / originalImage.width);
-    var w = originalImage.width * scale;
-    var h = originalImage.height * scale;
-    var pad = 30;
-    colorCtx.fillStyle = '#ffffff';
-    colorCtx.fillRect(0, 0, colorCanvas.width, colorCanvas.height);
-    colorCtx.save();
-    colorCtx.translate(colorCanvas.width / 2, colorCanvas.height / 2);
-    colorCtx.rotate(rotation * Math.PI / 180);
-    colorCtx.drawImage(originalImage, -w / 2, -h / 2, w, h);
-    colorCtx.restore();
+    scanCtx.filter = 'brightness(' + brightness + '%) contrast(' + contrast + '%)';
+    scanCtx.save();
+    scanCtx.translate(scanCanvas.width / 2, scanCanvas.height / 2);
+    scanCtx.rotate(rotation * Math.PI / 180);
+    scanCtx.drawImage(originalImage, -scanCanvas.width / 2, -scanCanvas.height / 2, scanCanvas.width, scanCanvas.height);
+    scanCtx.restore();
+    scanCtx.filter = 'none';
 
-    // Use enhanced canvas for OCR
-    previewCanvas.toBlob(function(blob) {
-        Tesseract.createWorker({
-            logger: function(m) {
-                if (m.status === 'recognizing text') {
-                    var pct = Math.round(m.progress * 100);
-                    document.getElementById('progressFill').style.width = pct + '%';
-                    document.getElementById('progressLabel').textContent = 'Recognizing... ' + pct + '%';
-                } else {
-                    document.getElementById('progressLabel').textContent = m.status || 'Processing...';
-                }
-            }
-        }).then(function(worker) {
-            return worker.loadLanguage('eng').then(function() {
-                return worker.initialize('eng');
-            }).then(function() {
-                return worker.recognize(blob);
-            }).then(function(result) {
-                worker.terminate();
-                console.log('OCR Result:\n', result.data.text);
-                console.log('Lines with boxes:', result.data.lines.length);
+    // Convert to base64 JPEG (smaller than PNG)
+    var base64 = scanCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 
-                // Analyze each line for highlight color
-                var linesWithColor = analyzeLineColors(result.data.lines, colorCtx, colorCanvas);
-                extractedData = parseMenuWithHighlights(result.data.text, linesWithColor);
-                displayResults();
-                document.getElementById('loadingSection').classList.remove('show');
-            });
-        }).catch(function(err) {
-            console.error(err);
-            showAlert('error', 'Scan failed. Try a clearer image.');
-            document.getElementById('uploadCard').style.display = '';
-            document.getElementById('loadingSection').classList.remove('show');
-        });
-    }, 'image/png');
+    document.getElementById('progressFill').style.width = '30%';
+    document.getElementById('progressLabel').textContent = '🧠 Sending to Claude AI...';
+
+    // Send to proxy
+    fetch(proxyUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+            apiKey: apiKey,
+            image: base64,
+            mediaType: 'image/jpeg'
+        })
+    })
+    .then(function(response) {
+        document.getElementById('progressFill').style.width = '70%';
+        document.getElementById('progressLabel').textContent = 'Processing AI response...';
+        return response.json();
+    })
+    .then(function(result) {
+        document.getElementById('progressFill').style.width = '90%';
+
+        if (result.status === 'error') {
+            throw new Error(result.message || 'Unknown error');
+        }
+        if (!result.data || result.data.error) {
+            throw new Error((result.data && result.data.error) || 'AI returned invalid data');
+        }
+
+        var data = result.data;
+        console.log('Claude Vision result:', data);
+        console.log('Items detected:', data.menuItems ? data.menuItems.length : 0);
+        if (result.usage) console.log('Token usage:', result.usage);
+
+        // Format for displayResults
+        extractedData = {
+            eventInfo: {
+                date: convertDate(data.eventInfo.date || ''),
+                eventType: data.eventInfo.eventType || '',
+                hallName: data.eventInfo.hallName || '',
+                eventSize: data.eventInfo.eventSize || '',
+                eventOwner: data.eventInfo.eventOwner || '',
+                startTime: data.eventInfo.startTime || '',
+                phone: data.eventInfo.phone || ''
+            },
+            menuItems: (data.menuItems || []).map(function(item) {
+                return {
+                    dishName: item.dishName || '',
+                    status: item.status || 'Unknown',
+                    amountRemained: item.amountRemained || '',
+                    category: item.category || '',
+                    reason: '',
+                    notes: ''
+                };
+            })
+        };
+
+        document.getElementById('progressFill').style.width = '100%';
+        displayResults();
+        document.getElementById('actionBar').style.display = '';
+    })
+    .catch(function(err) {
+        console.error('Scan error:', err);
+        showAlert('error', 'AI Scan failed: ' + err.message);
+        document.getElementById('uploadCard').style.display = '';
+        document.getElementById('actionBar').style.display = '';
+    })
+    .finally(function() {
+        document.getElementById('loadingSection').classList.remove('show');
+    });
 }
 
-/* ═══ HIGHLIGHT COLOR DETECTION ═══ */
-function analyzeLineColors(ocrLines, colorCtx, colorCanvas) {
-    // Step 1: Determine paper baseline color
-    // Sample the center of the image where paper is likely white/cream
-    var centerX = Math.round(colorCanvas.width * 0.5);
-    var centerY = Math.round(colorCanvas.height * 0.3);
-    var sampleW = Math.round(colorCanvas.width * 0.4);
-    var baselineData;
-    try {
-        baselineData = colorCtx.getImageData(centerX - sampleW/2, centerY - 10, sampleW, 20);
-    } catch(e) {
-        baselineData = null;
-    }
+/* ═══ CLAUDE VISION CONFIG ═══ */
+function saveClaudeConfig() {
+    var apiKey = document.getElementById('claudeApiKey').value.trim();
+    var proxyUrl = document.getElementById('claudeProxyUrl').value.trim();
 
-    var baseYellowDev = 5; // default paper yellow deviation
-    if (baselineData) {
-        var totalDev = 0, count = 0;
-        for (var p = 0; p < baselineData.data.length; p += 16) {
-            var r = baselineData.data[p], g = baselineData.data[p+1], b = baselineData.data[p+2];
-            var light = (r + g + b) / 3;
-            if (light > 150 && light < 240) { // paper-like pixels only
-                totalDev += (r + g) / 2 - b;
-                count++;
-            }
-        }
-        if (count > 10) baseYellowDev = totalDev / count;
-    }
-    console.log('Paper baseline yellow deviation:', baseYellowDev.toFixed(1));
+    if (!apiKey) { showAlert('error', 'Enter API Key'); return; }
+    if (!proxyUrl) { showAlert('error', 'Enter Proxy URL'); return; }
 
-    // Step 2: Analyze each OCR line
-    var results = [];
-
-    for (var i = 0; i < ocrLines.length; i++) {
-        var line = ocrLines[i];
-        var bbox = line.bbox;
-        var text = line.text.trim();
-        if (!text || text.length < 2) continue;
-
-        var x0 = Math.max(0, bbox.x0);
-        var y0 = Math.max(0, bbox.y0);
-        var x1 = Math.min(colorCanvas.width, bbox.x1);
-        var y1 = Math.min(colorCanvas.height, bbox.y1);
-        var lineWidth = x1 - x0;
-        var lineHeight = y1 - y0;
-        if (lineWidth < 5 || lineHeight < 3) continue;
-
-        // Sample horizontal strip through middle of line
-        var sampleY = Math.round(y0 + lineHeight * 0.5);
-        var sampleH = Math.max(3, Math.round(lineHeight * 0.5));
-        var startY = Math.max(0, sampleY - Math.floor(sampleH / 2));
-
-        var imgData;
-        try { imgData = colorCtx.getImageData(x0, startY, lineWidth, sampleH); }
-        catch(e) { continue; }
-
-        var pixels = imgData.data;
-        var yellowHits = 0, redHits = 0, paperPixels = 0;
-
-        for (var p = 0; p < pixels.length; p += 8) {
-            var r = pixels[p], g = pixels[p+1], b = pixels[p+2];
-            var light = (r + g + b) / 3;
-
-            // Only analyze paper-like pixels (not text, not dark areas)
-            if (light < 120 || light > 245) continue;
-            paperPixels++;
-
-            // Yellow deviation: how much more yellow than paper baseline?
-            var yellowDev = (r + g) / 2 - b;
-            if (yellowDev > baseYellowDev + 10) {
-                yellowHits++;
-            }
-
-            // Red deviation: R significantly higher than G and B
-            var redDev = r - (g + b) / 2;
-            if (redDev > 30 && r > 150) {
-                redHits++;
-            }
-            // Purple: B higher than G, with some R
-            var purpleDev = (r + b) / 2 - g;
-            if (purpleDev > 25 && b > 100 && r > 100 && g < 150) {
-                redHits++;
-            }
-        }
-
-        var yellowPct = paperPixels > 0 ? (yellowHits / paperPixels) * 100 : 0;
-        var redPct = paperPixels > 0 ? (redHits / paperPixels) * 100 : 0;
-
-        // Threshold: 12% of paper-like pixels must show highlight color
-        var highlight = 'none';
-        if (yellowPct > 12) highlight = 'yellow';
-        if (redPct > 12) highlight = 'red';
-        if (yellowPct > 12 && redPct > 12) {
-            highlight = yellowPct > redPct ? 'yellow' : 'red';
-        }
-
-        results.push({
-            text: text,
-            highlight: highlight,
-            yellowPct: Math.round(yellowPct),
-            redPct: Math.round(redPct),
-            bbox: bbox
-        });
-
-        if (highlight !== 'none') {
-            console.log('[✓ ' + highlight.toUpperCase() + '] "' + text.substring(0, 50) + '" (Y:' + Math.round(yellowPct) + '% R:' + Math.round(redPct) + '%)');
-        }
-    }
-
-    return results;
+    localStorage.setItem('claudeApiKey', apiKey);
+    localStorage.setItem('claudeProxyUrl', proxyUrl);
+    updateClaudeStatus(true);
+    showAlert('success', '🧠 Claude Vision configured! Ready to scan.');
 }
 
-/* ═══ PARSE MENU WITH HIGHLIGHT DATA ═══ */
-function parseMenuWithHighlights(fullText, linesWithColor) {
-    var raw = fullText;
-    var allLines = fullText.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.length>0});
-    var fullLower = allLines.join(' ').toLowerCase();
-
-    // ── Extract event info from ALL text (not just highlighted) ──
-    var info = {date:'',eventType:'',hallName:'',eventSize:'',eventOwner:'',startTime:'',phone:''};
-
-    if (fullLower.includes('ateres') || fullLower.includes('golda')) info.hallName = 'Ateres Golda';
-    else if (fullLower.includes('scharf')) info.hallName = 'Scharf';
-    else if (/\blh\b/.test(fullLower)) info.hallName = 'LH';
-    else info.hallName = 'Ateres Golda';
-
-    if (/\bFN\b/.test(raw)) info.startTime = 'FN';
-    else if (/\bSN\b/.test(raw)) info.startTime = 'SN';
-    else if (/\bSD\b/.test(raw)) info.startTime = 'SD';
-
-    var phoneMatch = raw.match(/(\d{3}[\-\s\.]\d{3}[\-\s\.]\d{2,4})/);
-    if (phoneMatch) info.phone = phoneMatch[1];
-
-    var allDates = raw.match(/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/g);
-    if (allDates) info.date = convertDate(allDates[0]);
-
-    var typeMap = [
-        {kw:['aufruf','aufrut'],val:'Aufruf'},
-        {kw:['wedding','chasuna','dinner'],val:'Wedding'},
-        {kw:['bar mitzvah','bar mitzva'],val:'Bar Mitzvah'},
-        {kw:['sheva brachot','sheva brachos'],val:'Sheva Brachot'},
-        {kw:['vort'],val:'Vort'},
-        {kw:['shabbat','shabbos','kiddush','kiddish'],val:'Shabbat'}
-    ];
-    for (var t=0;t<typeMap.length;t++){
-        for (var k=0;k<typeMap[t].kw.length;k++){
-            if (fullLower.includes(typeMap[t].kw[k])){info.eventType=typeMap[t].val;break;}
-        }
-        if(info.eventType)break;
-    }
-
-    for (var i=0;i<Math.min(25,allLines.length);i++){
-        var line=allLines[i]; var low=line.toLowerCase();
-        if (low.includes('party') && (low.includes('name')||low.includes('neme'))){
-            var after=line.split(/party\s*n[ae]me[s]?\s*/i)[1];
-            if(after){var cl=after.replace(/[^a-zA-Z\s\-']/g,'').trim();if(cl.length>=2&&cl.length<40)info.eventOwner=cl;}
-            if(!info.eventOwner){for(var j=1;j<=3&&i+j<allLines.length;j++){var nx=allLines[i+j].trim();if(nx.length>=2&&nx.length<40&&/^[A-Z]/.test(nx)&&!/\d{3}/.test(nx)&&!nx.toLowerCase().includes('menu')){info.eventOwner=nx.replace(/[^a-zA-Z\s\-']/g,'').trim();break;}}}
-        }
-        if(low.includes('customer')||low.includes('ustomer')){var np=line.split(/[,\/]/)[0].replace(/customer|ustomer|telephone/gi,'').replace(/[^a-zA-Z\s\-']/g,'').trim();if(np.length>=2&&np.length<40&&!info.eventOwner)info.eventOwner=np;}
-    }
-
-    var gm=raw.match(/(\d{1,3})\s*[-\u2013]\s*(\d{1,3})\s*(people|person|guest)?/i);
-    if(gm) info.eventSize=gm[1]+'-'+gm[2];
-    if(!info.eventSize){var pm=raw.match(/(\d{3})\s*PEOPLE/i);if(pm)info.eventSize=pm[1];}
-
-    // ── Now process ONLY highlighted lines for menu items ──
-    var menuItems = [];
-
-    for (var i = 0; i < linesWithColor.length; i++) {
-        var lineData = linesWithColor[i];
-
-        // Skip non-highlighted lines entirely
-        if (lineData.highlight === 'none') continue;
-
-        var text = lineData.text;
-
-        // Clean up OCR artifacts
-        var dishName = text
-            .replace(/[\u2611\u2713\u2714\u2612\u2717\u2718\u274C\u2705\u2B1C\u2B1B]/g, '')
-            .replace(/^\s*[-\u2022*]\s*/, '')
-            .replace(/[|[\]{}]/g, '')
-            .trim();
-
-        // Skip very short or pure numbers
-        if (dishName.length < 2 || /^[\d\s\-\.\/]+$/.test(dishName)) continue;
-
-        // Extract quantity (number at end of line)
-        var amount = '';
-        var numMatch = dishName.match(/\s+(\d{1,3})\s*$/);
-        if (numMatch && parseInt(numMatch[1]) <= 500) {
-            amount = numMatch[1];
-            dishName = dishName.replace(numMatch[0], '').trim();
-        }
-        // Also check for X or x at end (means 0 or finished)
-        var xMatch = dishName.match(/\s+[Xx✗✘]\s*$/);
-        if (xMatch) {
-            dishName = dishName.replace(xMatch[0], '').trim();
-            if (lineData.highlight === 'yellow') amount = '0';
-        }
-        // Check for "0" or "O" at end
-        var zeroMatch = dishName.match(/\s+[0Oo]\s*$/);
-        if (zeroMatch) {
-            amount = '0';
-            dishName = dishName.replace(zeroMatch[0], '').trim();
-        }
-
-        if (dishName.length < 2) continue;
-
-        // Determine status from highlight color
-        var status = 'Remained';
-        if (lineData.highlight === 'red') {
-            status = 'Finished';
-            amount = '0';
-        }
-
-        // Clean up common OCR issues in dish names
-        dishName = dishName
-            .replace(/^\d+\s+/, '')  // leading numbers
-            .replace(/\s+/g, ' ')    // double spaces
-            .trim();
-
-        // Remove "- in center of tables" type suffixes but keep the dish name
-        var cleanName = dishName.replace(/\s*[-–]\s*in center.*$/i, '').trim();
-        if (cleanName.length >= 2) dishName = cleanName;
-
-        menuItems.push({
-            dishName: dishName,
-            status: status,
-            amountRemained: amount,
-            category: '',
-            reason: '',
-            notes: '',
-            highlightPct: lineData.highlight === 'yellow' ? lineData.yellowPct : lineData.redPct
-        });
-    }
-
-    return { eventInfo: info, menuItems: menuItems };
+function loadClaudeConfig() {
+    var apiKey = localStorage.getItem('claudeApiKey') || '';
+    var proxyUrl = localStorage.getItem('claudeProxyUrl') || '';
+    document.getElementById('claudeApiKey').value = apiKey;
+    document.getElementById('claudeProxyUrl').value = proxyUrl;
+    updateClaudeStatus(apiKey && proxyUrl);
 }
 
-function isIgnored(name){var low=name.toLowerCase();for(var i=0;i<ignoreList.length;i++){if(low.includes(ignoreList[i]))return true;}return false;}
+function updateClaudeStatus(connected) {
+    var el = document.getElementById('claudeStatus');
+    if (connected) {
+        el.style.background = '#e8f5ec';
+        el.style.color = '#3a7d4f';
+        el.textContent = '✅ Claude Vision ready';
+    } else {
+        el.style.background = '#fff3e0';
+        el.style.color = '#e65100';
+        el.textContent = '⚠️ Not configured — add API Key + Proxy URL';
+    }
+}
 
 function convertDate(d){try{var p=d.split(/[\/\-\.]/);if(p.length===3){var m=p[0].length<2?'0'+p[0]:p[0];var day=p[1].length<2?'0'+p[1]:p[1];var y=p[2];if(y.length===2)y='20'+y;return y+'-'+m+'-'+day;}}catch(e){}return d;}
 
@@ -1887,17 +1744,33 @@ function displayResults(){
     var list=document.getElementById('menuItemsList');list.innerHTML='';
     var items=extractedData.menuItems;
 
-    var remainedCount=0, finishedCount=0;
+    var remainedCount=0, finishedCount=0, unknownCount=0;
     for(var c=0;c<items.length;c++){
         if(items[c].status==='Remained')remainedCount++;
-        if(items[c].status==='Finished')finishedCount++;
+        else if(items[c].status==='Finished')finishedCount++;
+        else unknownCount++;
     }
-    document.getElementById('itemsCount').textContent=items.length+' item'+(items.length!==1?'s':'')+' (🟡'+remainedCount+' 🔴'+finishedCount+')';
+    var countText = items.length+' item'+(items.length!==1?'s':'');
+    countText += ' (✅' + remainedCount + ' ❌' + finishedCount;
+    if (unknownCount > 0) countText += ' ❓' + unknownCount;
+    countText += ')';
+    document.getElementById('itemsCount').textContent = countText;
 
-    if(items.length===0){list.innerHTML='<p style="text-align:center;color:#999;padding:20px">No highlighted items detected.<br><small>Make sure the menu has yellow or red highlighted lines.</small></p>';}
+    if(items.length===0){list.innerHTML='<p style="text-align:center;color:#999;padding:20px">No menu items detected.<br><small>Check that the image is clear and try again.</small></p>';}
 
+    var lastCategory = '';
     for(var idx=0;idx<items.length;idx++){
         var item=items[idx];
+
+        // Category header
+        if (item.category && item.category !== lastCategory) {
+            var catDiv = document.createElement('div');
+            catDiv.style.cssText = 'padding:8px 12px;background:var(--primary);color:white;border-radius:6px;margin:12px 0 6px;font-size:12px;font-weight:700;letter-spacing:0.5px';
+            catDiv.textContent = '📂 ' + item.category;
+            list.appendChild(catDiv);
+            lastCategory = item.category;
+        }
+
         var sc=item.status==='Remained'?'remained':item.status==='Finished'?'finished':'unknown';
         var div=document.createElement('div');div.className='menu-item';
         div.innerHTML='<div class="menu-item-top"><span class="dish-name">'+esc(item.dishName)+'</span><span class="status-tag '+sc+'">'+item.status+'</span></div><div class="menu-item-fields"><div><div class="mini-label">Amount Remained</div><input class="mini-input" id="amount_'+idx+'" value="'+esc(item.amountRemained)+'" placeholder="e.g. 20"></div><div><div class="mini-label">Status</div><select class="mini-select" id="status_'+idx+'"><option value="Remained"'+(item.status==='Remained'?' selected':'')+'>Remained</option><option value="Finished"'+(item.status==='Finished'?' selected':'')+'>Finished</option></select></div><div><div class="mini-label">Reason</div><input class="mini-input" id="reason_'+idx+'" placeholder="Why remained?"></div><div><div class="mini-label">Notes</div><input class="mini-input" id="notes_'+idx+'" placeholder="Notes"></div></div>';
@@ -1907,7 +1780,7 @@ function displayResults(){
     document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
 }
 
-function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();loadGoogleConfig();loadFirebaseConfig();}
+function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();loadGoogleConfig();loadFirebaseConfig();loadClaudeConfig();}
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
 
 function saveGoogleConfig(){
