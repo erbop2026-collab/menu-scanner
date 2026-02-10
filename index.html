@@ -577,18 +577,19 @@
         <div class="modal-body">
             <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
                 <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🧠 Claude Vision (AI Scanner)</div>
-                <div class="modal-info">Powers the menu scanning. Requires an Anthropic API key and a deployed proxy script.</div>
+                <div class="modal-info">Powers the menu scanning. API key is built into the app. Only Proxy URL needs setup once.</div>
                 <div id="claudeStatus" style="padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;background:#fff3e0;color:#e65100">⏳ Not configured</div>
                 <div style="margin-bottom:10px">
                     <label class="form-label">Anthropic API Key</label>
-                    <input type="password" class="form-input" id="claudeApiKey" placeholder="sk-ant-api03-...">
+                    <input type="password" class="form-input" id="claudeApiKey" placeholder="sk-ant-api03-..." disabled style="background:#f5f0eb">
+                    <p style="font-size:11px;color:var(--success);margin-top:4px;font-weight:600">✅ Built into app</p>
                 </div>
                 <div style="margin-bottom:10px">
                     <label class="form-label">Vision Proxy URL</label>
                     <input type="url" class="form-input" id="claudeProxyUrl" placeholder="https://script.google.com/macros/s/.../exec">
                     <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Deploy the proxy script in Google Apps Script and paste the URL here</p>
                 </div>
-                <button type="button" class="btn-reset-modal" style="background:var(--success)" onclick="saveClaudeConfig()">💾 Save & Test</button>
+                <button type="button" class="btn-reset-modal" style="background:var(--success)" onclick="saveClaudeConfig()">💾 Save Proxy URL</button>
             </div>
 
             <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
@@ -681,6 +682,10 @@ var FIREBASE_CONFIG = {
     projectId: 'depreciation-recording',
     appId: '1:480755533717:web:a5c7f7d71b17453ffa189c'
 };
+
+/* ═══ CLAUDE VISION ═══ */
+var CLAUDE_API_KEY = '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';
+var CLAUDE_PROXY_URL = localStorage.getItem('claudeProxyUrl') || ''; // Set once in Settings, saved forever
 
 function initFirebase() {
     // Allow override from localStorage (settings), fallback to hardcoded
@@ -1586,11 +1591,12 @@ function resetTransform() {
 function scanMenu() {
     if (!originalImage) { showAlert('error', 'Select an image first.'); return; }
 
-    var apiKey = localStorage.getItem('claudeApiKey') || '';
-    var proxyUrl = localStorage.getItem('claudeProxyUrl') || '';
+    // Use hardcoded values, fallback to localStorage settings
+    var apiKey = CLAUDE_API_KEY || localStorage.getItem('claudeApiKey') || '';
+    var proxyUrl = CLAUDE_PROXY_URL || localStorage.getItem('claudeProxyUrl') || '';
 
     if (!apiKey || !proxyUrl) {
-        showAlert('error', '⚙️ Set up Claude Vision in Settings first (API Key + Proxy URL).');
+        showAlert('error', '⚙️ Claude Vision not configured. Set Proxy URL in Settings or update the code.');
         return;
     }
 
@@ -1696,22 +1702,20 @@ function scanMenu() {
 
 /* ═══ CLAUDE VISION CONFIG ═══ */
 function saveClaudeConfig() {
-    var apiKey = document.getElementById('claudeApiKey').value.trim();
     var proxyUrl = document.getElementById('claudeProxyUrl').value.trim();
 
-    if (!apiKey) { showAlert('error', 'Enter API Key'); return; }
     if (!proxyUrl) { showAlert('error', 'Enter Proxy URL'); return; }
 
-    localStorage.setItem('claudeApiKey', apiKey);
     localStorage.setItem('claudeProxyUrl', proxyUrl);
+    CLAUDE_PROXY_URL = proxyUrl;
     updateClaudeStatus(true);
     showAlert('success', '🧠 Claude Vision configured! Ready to scan.');
 }
 
 function loadClaudeConfig() {
-    var apiKey = localStorage.getItem('claudeApiKey') || '';
-    var proxyUrl = localStorage.getItem('claudeProxyUrl') || '';
-    document.getElementById('claudeApiKey').value = apiKey;
+    var apiKey = CLAUDE_API_KEY || localStorage.getItem('claudeApiKey') || '';
+    var proxyUrl = CLAUDE_PROXY_URL || localStorage.getItem('claudeProxyUrl') || '';
+    document.getElementById('claudeApiKey').value = apiKey ? '••••••••' + apiKey.slice(-8) : '';
     document.getElementById('claudeProxyUrl').value = proxyUrl;
     updateClaudeStatus(apiKey && proxyUrl);
 }
