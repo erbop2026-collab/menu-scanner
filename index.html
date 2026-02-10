@@ -288,7 +288,8 @@
                 </div>
             </div>
         </div>
-        <button type="button" class="btn-primary" id="scanButton" style="display:none" onclick="scanMenu()">🔍 Scan &amp; Extract Menu</button>
+        <button type="button" class="btn-primary" id="scanButton" style="display:none" onclick="scanMenu()">🔍 Scan Highlighted Items</button>
+        <p id="scanHint" style="display:none;text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">🟡 Yellow = Remained &nbsp; 🔴 Red/Purple = Finished &nbsp; ⬜ No highlight = Ignored</p>
     </div>
 
     <div class="loading-section" id="loadingSection">
@@ -538,6 +539,7 @@ function handleFile(file) {
             document.getElementById('previewSection').classList.add('show');
             document.getElementById('alignTools').classList.add('show');
             document.getElementById('scanButton').style.display = '';
+            document.getElementById('scanHint').style.display = '';
             autoAlign();
         };
         img.onerror = function() { showAlert('error', 'Could not load image.'); };
@@ -594,8 +596,30 @@ function scanMenu() {
     document.getElementById('uploadCard').style.display = 'none';
     document.getElementById('loadingSection').classList.add('show');
     hideAlerts();
-    var canvas = document.getElementById('previewCanvas');
-    canvas.toBlob(function(blob) {
+
+    // Create a CLEAN canvas (no brightness/contrast) for color analysis
+    var colorCanvas = document.createElement('canvas');
+    var colorCtx = colorCanvas.getContext('2d', {willReadFrequently: true});
+    var previewCanvas = document.getElementById('previewCanvas');
+    colorCanvas.width = previewCanvas.width;
+    colorCanvas.height = previewCanvas.height;
+
+    // Draw original image at same position/rotation - NO filters (pure color analysis)
+    var rotation = parseFloat(document.getElementById('rotationSlider').value) || 0;
+    var scale = Math.min(1, 600 / originalImage.width);
+    var w = originalImage.width * scale;
+    var h = originalImage.height * scale;
+    var pad = 30;
+    colorCtx.fillStyle = '#ffffff';
+    colorCtx.fillRect(0, 0, colorCanvas.width, colorCanvas.height);
+    colorCtx.save();
+    colorCtx.translate(colorCanvas.width / 2, colorCanvas.height / 2);
+    colorCtx.rotate(rotation * Math.PI / 180);
+    colorCtx.drawImage(originalImage, -w / 2, -h / 2, w, h);
+    colorCtx.restore();
+
+    // Use enhanced canvas for OCR
+    previewCanvas.toBlob(function(blob) {
         Tesseract.createWorker({
             logger: function(m) {
                 if (m.status === 'recognizing text') {
@@ -614,7 +638,11 @@ function scanMenu() {
             }).then(function(result) {
                 worker.terminate();
                 console.log('OCR Result:\n', result.data.text);
-                extractedData = parseMenu(result.data.text);
+                console.log('Lines with boxes:', result.data.lines.length);
+
+                // Analyze each line for highlight color
+                var linesWithColor = analyzeLineColors(result.data.lines, colorCtx, colorCanvas);
+                extractedData = parseMenuWithHighlights(result.data.text, linesWithColor);
                 displayResults();
                 document.getElementById('loadingSection').classList.remove('show');
             });
@@ -627,15 +655,129 @@ function scanMenu() {
     }, 'image/png');
 }
 
-function parseMenu(text) {
-    var raw = text;
-    var lines = text.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.length>0});
-    var fullText = lines.join(' ').toLowerCase();
+/* ═══ HIGHLIGHT COLOR DETECTION ═══ */
+function analyzeLineColors(ocrLines, colorCtx, colorCanvas) {
+    // Step 1: Determine paper baseline color
+    // Sample the center of the image where paper is likely white/cream
+    var centerX = Math.round(colorCanvas.width * 0.5);
+    var centerY = Math.round(colorCanvas.height * 0.3);
+    var sampleW = Math.round(colorCanvas.width * 0.4);
+    var baselineData;
+    try {
+        baselineData = colorCtx.getImageData(centerX - sampleW/2, centerY - 10, sampleW, 20);
+    } catch(e) {
+        baselineData = null;
+    }
+
+    var baseYellowDev = 5; // default paper yellow deviation
+    if (baselineData) {
+        var totalDev = 0, count = 0;
+        for (var p = 0; p < baselineData.data.length; p += 16) {
+            var r = baselineData.data[p], g = baselineData.data[p+1], b = baselineData.data[p+2];
+            var light = (r + g + b) / 3;
+            if (light > 150 && light < 240) { // paper-like pixels only
+                totalDev += (r + g) / 2 - b;
+                count++;
+            }
+        }
+        if (count > 10) baseYellowDev = totalDev / count;
+    }
+    console.log('Paper baseline yellow deviation:', baseYellowDev.toFixed(1));
+
+    // Step 2: Analyze each OCR line
+    var results = [];
+
+    for (var i = 0; i < ocrLines.length; i++) {
+        var line = ocrLines[i];
+        var bbox = line.bbox;
+        var text = line.text.trim();
+        if (!text || text.length < 2) continue;
+
+        var x0 = Math.max(0, bbox.x0);
+        var y0 = Math.max(0, bbox.y0);
+        var x1 = Math.min(colorCanvas.width, bbox.x1);
+        var y1 = Math.min(colorCanvas.height, bbox.y1);
+        var lineWidth = x1 - x0;
+        var lineHeight = y1 - y0;
+        if (lineWidth < 5 || lineHeight < 3) continue;
+
+        // Sample horizontal strip through middle of line
+        var sampleY = Math.round(y0 + lineHeight * 0.5);
+        var sampleH = Math.max(3, Math.round(lineHeight * 0.5));
+        var startY = Math.max(0, sampleY - Math.floor(sampleH / 2));
+
+        var imgData;
+        try { imgData = colorCtx.getImageData(x0, startY, lineWidth, sampleH); }
+        catch(e) { continue; }
+
+        var pixels = imgData.data;
+        var yellowHits = 0, redHits = 0, paperPixels = 0;
+
+        for (var p = 0; p < pixels.length; p += 8) {
+            var r = pixels[p], g = pixels[p+1], b = pixels[p+2];
+            var light = (r + g + b) / 3;
+
+            // Only analyze paper-like pixels (not text, not dark areas)
+            if (light < 120 || light > 245) continue;
+            paperPixels++;
+
+            // Yellow deviation: how much more yellow than paper baseline?
+            var yellowDev = (r + g) / 2 - b;
+            if (yellowDev > baseYellowDev + 10) {
+                yellowHits++;
+            }
+
+            // Red deviation: R significantly higher than G and B
+            var redDev = r - (g + b) / 2;
+            if (redDev > 30 && r > 150) {
+                redHits++;
+            }
+            // Purple: B higher than G, with some R
+            var purpleDev = (r + b) / 2 - g;
+            if (purpleDev > 25 && b > 100 && r > 100 && g < 150) {
+                redHits++;
+            }
+        }
+
+        var yellowPct = paperPixels > 0 ? (yellowHits / paperPixels) * 100 : 0;
+        var redPct = paperPixels > 0 ? (redHits / paperPixels) * 100 : 0;
+
+        // Threshold: 12% of paper-like pixels must show highlight color
+        var highlight = 'none';
+        if (yellowPct > 12) highlight = 'yellow';
+        if (redPct > 12) highlight = 'red';
+        if (yellowPct > 12 && redPct > 12) {
+            highlight = yellowPct > redPct ? 'yellow' : 'red';
+        }
+
+        results.push({
+            text: text,
+            highlight: highlight,
+            yellowPct: Math.round(yellowPct),
+            redPct: Math.round(redPct),
+            bbox: bbox
+        });
+
+        if (highlight !== 'none') {
+            console.log('[✓ ' + highlight.toUpperCase() + '] "' + text.substring(0, 50) + '" (Y:' + Math.round(yellowPct) + '% R:' + Math.round(redPct) + '%)');
+        }
+    }
+
+    return results;
+}
+
+/* ═══ PARSE MENU WITH HIGHLIGHT DATA ═══ */
+function parseMenuWithHighlights(fullText, linesWithColor) {
+    var raw = fullText;
+    var allLines = fullText.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.length>0});
+    var fullLower = allLines.join(' ').toLowerCase();
+
+    // ── Extract event info from ALL text (not just highlighted) ──
     var info = {date:'',eventType:'',hallName:'',eventSize:'',eventOwner:'',startTime:'',phone:''};
 
-    if (fullText.includes('ateres') || fullText.includes('golda')) info.hallName = 'Ateres Golda';
-    else if (fullText.includes('scharf')) info.hallName = 'Scharf';
-    else if (/\blh\b/.test(fullText)) info.hallName = 'LH';
+    if (fullLower.includes('ateres') || fullLower.includes('golda')) info.hallName = 'Ateres Golda';
+    else if (fullLower.includes('scharf')) info.hallName = 'Scharf';
+    else if (/\blh\b/.test(fullLower)) info.hallName = 'LH';
     else info.hallName = 'Ateres Golda';
 
     if (/\bFN\b/.test(raw)) info.startTime = 'FN';
@@ -650,7 +792,7 @@ function parseMenu(text) {
 
     var typeMap = [
         {kw:['aufruf','aufrut'],val:'Aufruf'},
-        {kw:['wedding','chasuna'],val:'Wedding'},
+        {kw:['wedding','chasuna','dinner'],val:'Wedding'},
         {kw:['bar mitzvah','bar mitzva'],val:'Bar Mitzvah'},
         {kw:['sheva brachot','sheva brachos'],val:'Sheva Brachot'},
         {kw:['vort'],val:'Vort'},
@@ -658,53 +800,97 @@ function parseMenu(text) {
     ];
     for (var t=0;t<typeMap.length;t++){
         for (var k=0;k<typeMap[t].kw.length;k++){
-            if (fullText.includes(typeMap[t].kw[k])){info.eventType=typeMap[t].val;break;}
+            if (fullLower.includes(typeMap[t].kw[k])){info.eventType=typeMap[t].val;break;}
         }
         if(info.eventType)break;
     }
 
-    for (var i=0;i<Math.min(25,lines.length);i++){
-        var line=lines[i]; var low=line.toLowerCase();
+    for (var i=0;i<Math.min(25,allLines.length);i++){
+        var line=allLines[i]; var low=line.toLowerCase();
         if (low.includes('party') && (low.includes('name')||low.includes('neme'))){
             var after=line.split(/party\s*n[ae]me[s]?\s*/i)[1];
             if(after){var cl=after.replace(/[^a-zA-Z\s\-']/g,'').trim();if(cl.length>=2&&cl.length<40)info.eventOwner=cl;}
-            if(!info.eventOwner){for(var j=1;j<=3&&i+j<lines.length;j++){var nx=lines[i+j].trim();if(nx.length>=2&&nx.length<40&&/^[A-Z]/.test(nx)&&!/\d{3}/.test(nx)&&!nx.toLowerCase().includes('menu')){info.eventOwner=nx.replace(/[^a-zA-Z\s\-']/g,'').trim();break;}}}
+            if(!info.eventOwner){for(var j=1;j<=3&&i+j<allLines.length;j++){var nx=allLines[i+j].trim();if(nx.length>=2&&nx.length<40&&/^[A-Z]/.test(nx)&&!/\d{3}/.test(nx)&&!nx.toLowerCase().includes('menu')){info.eventOwner=nx.replace(/[^a-zA-Z\s\-']/g,'').trim();break;}}}
         }
         if(low.includes('customer')||low.includes('ustomer')){var np=line.split(/[,\/]/)[0].replace(/customer|ustomer|telephone/gi,'').replace(/[^a-zA-Z\s\-']/g,'').trim();if(np.length>=2&&np.length<40&&!info.eventOwner)info.eventOwner=np;}
     }
 
     var gm=raw.match(/(\d{1,3})\s*[-\u2013]\s*(\d{1,3})\s*(people|person|guest)?/i);
     if(gm) info.eventSize=gm[1]+'-'+gm[2];
+    if(!info.eventSize){var pm=raw.match(/(\d{3})\s*PEOPLE/i);if(pm)info.eventSize=pm[1];}
 
-    var menuItems=[];var currentCat='';var inMenu=false;
-    var skipRe=/^(Ateres|Golda|Menu$|Affair|Event\s*Date|Ball\s*Room|Start\s*Time|Customer|Telephone|Party\s*N|Additional|Qty$|FN$)/i;
+    // ── Now process ONLY highlighted lines for menu items ──
+    var menuItems = [];
 
-    for(var i=0;i<lines.length;i++){
-        var line=lines[i];var low=line.toLowerCase();
-        if(/^MENU$/i.test(line.trim())){inMenu=true;continue;}
-        if(/^(FRIDAY\s*NIGHT|KIDDISH|KIDDUSH|MEN[\s\-\u2013]|LADIES[\s\-\u2013]|WOMEN[\s\-\u2013]|KAYX|DESSERT)/i.test(line)){currentCat=line.replace(/[\d\-\u2013]+$/g,'').trim();inMenu=true;continue;}
-        if(skipRe.test(line))continue;
-        if(line.length<3||/^\d{1,3}$/.test(line))continue;
-        if(/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(line))continue;
-        if(!inMenu&&i<10)continue;
-        if(/\d{3}[\-\s]\d{3}[\-\s]\d{2}/.test(line))continue;
+    for (var i = 0; i < linesWithColor.length; i++) {
+        var lineData = linesWithColor[i];
 
-        var hasCheck=/[\u2611\u2713\u2714\u2705]/.test(line);
-        var hasCross=/[\u2612\u2717\u2718\u274C]/.test(line);
-        var dishName=line.replace(/[\u2611\u2713\u2714\u2612\u2717\u2718\u274C\u2705\u2B1C\u2B1B]/g,'').replace(/^\s*[-\u2022*]\s*/,'').trim();
+        // Skip non-highlighted lines entirely
+        if (lineData.highlight === 'none') continue;
 
-        var amount='';
-        var numMatch=dishName.match(/\s+(\d{1,3})\s*$/);
-        if(numMatch&&parseInt(numMatch[1])<=500){amount=numMatch[1];dishName=dishName.replace(numMatch[0],'').trim();}
-        if(isIgnored(dishName))continue;
-        if(dishName.length<3||/^[\d\s\-\.\/]+$/.test(dishName))continue;
+        var text = lineData.text;
 
-        var status='Unknown';
-        if(hasCheck)status='Remained';
-        if(hasCross)status='Finished';
-        menuItems.push({dishName:dishName,status:status,amountRemained:amount,category:currentCat,reason:'',notes:''});
+        // Clean up OCR artifacts
+        var dishName = text
+            .replace(/[\u2611\u2713\u2714\u2612\u2717\u2718\u274C\u2705\u2B1C\u2B1B]/g, '')
+            .replace(/^\s*[-\u2022*]\s*/, '')
+            .replace(/[|[\]{}]/g, '')
+            .trim();
+
+        // Skip very short or pure numbers
+        if (dishName.length < 2 || /^[\d\s\-\.\/]+$/.test(dishName)) continue;
+
+        // Extract quantity (number at end of line)
+        var amount = '';
+        var numMatch = dishName.match(/\s+(\d{1,3})\s*$/);
+        if (numMatch && parseInt(numMatch[1]) <= 500) {
+            amount = numMatch[1];
+            dishName = dishName.replace(numMatch[0], '').trim();
+        }
+        // Also check for X or x at end (means 0 or finished)
+        var xMatch = dishName.match(/\s+[Xx✗✘]\s*$/);
+        if (xMatch) {
+            dishName = dishName.replace(xMatch[0], '').trim();
+            if (lineData.highlight === 'yellow') amount = '0';
+        }
+        // Check for "0" or "O" at end
+        var zeroMatch = dishName.match(/\s+[0Oo]\s*$/);
+        if (zeroMatch) {
+            amount = '0';
+            dishName = dishName.replace(zeroMatch[0], '').trim();
+        }
+
+        if (dishName.length < 2) continue;
+
+        // Determine status from highlight color
+        var status = 'Remained';
+        if (lineData.highlight === 'red') {
+            status = 'Finished';
+            amount = '0';
+        }
+
+        // Clean up common OCR issues in dish names
+        dishName = dishName
+            .replace(/^\d+\s+/, '')  // leading numbers
+            .replace(/\s+/g, ' ')    // double spaces
+            .trim();
+
+        // Remove "- in center of tables" type suffixes but keep the dish name
+        var cleanName = dishName.replace(/\s*[-–]\s*in center.*$/i, '').trim();
+        if (cleanName.length >= 2) dishName = cleanName;
+
+        menuItems.push({
+            dishName: dishName,
+            status: status,
+            amountRemained: amount,
+            category: '',
+            reason: '',
+            notes: '',
+            highlightPct: lineData.highlight === 'yellow' ? lineData.yellowPct : lineData.redPct
+        });
     }
-    return {eventInfo:info,menuItems:menuItems};
+
+    return { eventInfo: info, menuItems: menuItems };
 }
 
 function isIgnored(name){var low=name.toLowerCase();for(var i=0;i<ignoreList.length;i++){if(low.includes(ignoreList[i]))return true;}return false;}
@@ -723,13 +909,18 @@ function displayResults(){
 
     var list=document.getElementById('menuItemsList');list.innerHTML='';
     var items=extractedData.menuItems;
-    document.getElementById('itemsCount').textContent=items.length+' item'+(items.length!==1?'s':'');
-    if(items.length===0){list.innerHTML='<p style="text-align:center;color:#999;padding:20px">No menu items detected.</p>';}
 
-    var lastCat='';
+    var remainedCount=0, finishedCount=0;
+    for(var c=0;c<items.length;c++){
+        if(items[c].status==='Remained')remainedCount++;
+        if(items[c].status==='Finished')finishedCount++;
+    }
+    document.getElementById('itemsCount').textContent=items.length+' item'+(items.length!==1?'s':'')+' (🟡'+remainedCount+' 🔴'+finishedCount+')';
+
+    if(items.length===0){list.innerHTML='<p style="text-align:center;color:#999;padding:20px">No highlighted items detected.<br><small>Make sure the menu has yellow or red highlighted lines.</small></p>';}
+
     for(var idx=0;idx<items.length;idx++){
         var item=items[idx];
-        if(item.category&&item.category!==lastCat){lastCat=item.category;var cd=document.createElement('div');cd.className='category-divider';cd.innerHTML='<span class="category-label">'+esc(item.category)+'</span>';list.appendChild(cd);}
         var sc=item.status==='Remained'?'remained':item.status==='Finished'?'finished':'unknown';
         var div=document.createElement('div');div.className='menu-item';
         div.innerHTML='<div class="menu-item-top"><span class="dish-name">'+esc(item.dishName)+'</span><span class="status-tag '+sc+'">'+item.status+'</span></div><div class="menu-item-fields"><div><div class="mini-label">Amount Remained</div><input class="mini-input" id="amount_'+idx+'" value="'+esc(item.amountRemained)+'" placeholder="e.g. 20"></div><div><div class="mini-label">Status</div><select class="mini-select" id="status_'+idx+'"><option value="Remained"'+(item.status==='Remained'?' selected':'')+'>Remained</option><option value="Finished"'+(item.status==='Finished'?' selected':'')+'>Finished</option></select></div><div><div class="mini-label">Reason</div><input class="mini-input" id="reason_'+idx+'" placeholder="Why remained?"></div><div><div class="mini-label">Notes</div><input class="mini-input" id="notes_'+idx+'" placeholder="Notes"></div></div>';
