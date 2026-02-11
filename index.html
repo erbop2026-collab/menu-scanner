@@ -1,12 +1,17 @@
 <!--
 ═══════════════════════════════════════════════════════════════
   MENU SCANNER — ATERES GOLDA
-  Version: 2.0.1
+  Version: 2.0.2
   Last Updated: 2026-02-11
 ═══════════════════════════════════════════════════════════════
 
 CHANGELOG:
 ──────────
+v2.0.2 (2026-02-11) — API Key moved to Proxy
+  • API Key now hardcoded in Google Apps Script proxy (server-side)
+  • More secure: key never sent from browser
+  • Fixes 401 encoding issue
+
 v2.0.1 (2026-02-11) — API Key + Improved Prompt
   • Updated Claude API key (old one was invalid)
   • Improved AI prompt: better header table extraction (date, affair, party names)
@@ -55,7 +60,7 @@ v1.6.0 — Highlight Detection (Tesseract era)
 
 HARDCODED CONFIG:
   • Firebase: apiKey, projectId, appId (line ~690)
-  • Claude API Key: sk-ant-api03-... (line ~690)
+  • Claude API Key: NOW IN PROXY SCRIPT (server-side, more secure)
   • Claude Proxy URL: https://script.google.com/macros/s/... (line ~691)
   • Default PIN: 1234
 
