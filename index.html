@@ -1615,27 +1615,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function handleFile(file) {
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        showAlert('error', 'Please select an image file.');
+        return;
+    }
     imageFile = file;
-    document.getElementById('fileName').textContent = file.name;
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        var img = new Image();
-        img.onload = function() {
+    document.getElementById('fileName').textContent = file.name + ' (' + Math.round(file.size / 1024) + 'KB)';
+
+    // Use Object URL instead of DataURL - much better memory on mobile
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function() {
+        URL.revokeObjectURL(url); // free memory
+        // If image is very large, resize to avoid memory issues on mobile
+        if (img.width > 2500 || img.height > 2500) {
+            var tempCanvas = document.createElement('canvas');
+            var tempCtx = tempCanvas.getContext('2d');
+            var ratio = Math.min(2500 / img.width, 2500 / img.height);
+            tempCanvas.width = Math.round(img.width * ratio);
+            tempCanvas.height = Math.round(img.height * ratio);
+            tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+            var resized = new Image();
+            resized.onload = function() {
+                originalImage = resized;
+                finishImageLoad();
+            };
+            resized.src = tempCanvas.toDataURL('image/jpeg', 0.85);
+        } else {
             originalImage = img;
-            drawPreview();
-            document.getElementById('previewSection').classList.add('show');
-            document.getElementById('alignTools').classList.add('show');
-            document.getElementById('scanButton').style.display = '';
-            document.getElementById('scanHint').style.display = '';
-            autoAlign();
-            // Scroll to make scan button visible
-            setTimeout(function() { document.getElementById('scanButton').scrollIntoView({behavior:'smooth', block:'center'}); }, 300);
-        };
-        img.onerror = function() { showAlert('error', 'Could not load image.'); };
-        img.src = e.target.result;
+            finishImageLoad();
+        }
     };
-    reader.onerror = function() { showAlert('error', 'Could not read file.'); };
-    reader.readAsDataURL(file);
+    img.onerror = function() {
+        URL.revokeObjectURL(url);
+        showAlert('error', 'Could not load image. Try a different photo.');
+    };
+    img.src = url;
+}
+
+function finishImageLoad() {
+    drawPreview();
+    document.getElementById('previewSection').classList.add('show');
+    document.getElementById('alignTools').classList.add('show');
+    document.getElementById('scanButton').style.display = '';
+    document.getElementById('scanHint').style.display = '';
+    autoAlign();
+    setTimeout(function() { document.getElementById('scanButton').scrollIntoView({behavior:'smooth', block:'center'}); }, 300);
 }
 
 function drawPreview() {
