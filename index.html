@@ -22,10 +22,13 @@ v2.0.2 (2026-02-11) — API Key moved to Proxy + Header Fix
   • Greatly improved prompt for header table extraction (date, affair, party names)
   • Increased image resolution to 1400px for better header readability
 
-v2.0.1 (2026-02-11) — API Key + Improved Prompt
+v2.0.1 (2026-02-11) — API Key + Improved Prompt + Date Fix
   • Updated Claude API key (old one was invalid)
   • Improved AI prompt: better header table extraction (date, affair, party names)
   • Added Kiddush to event type dropdowns
+  • Fixed convertDate: handles YYYY-MM-DD from Claude without breaking it
+  • Added case-insensitive event type matching
+  • Added console logging for AI response debugging
 
 v2.0.0 (2026-02-10) — Claude Vision AI Integration
   • Replaced Tesseract.js OCR with Claude Vision API
@@ -1860,12 +1863,35 @@ function updateClaudeStatus(connected) {
     }
 }
 
-function convertDate(d){try{var p=d.split(/[\/\-\.]/);if(p.length===3){var m=p[0].length<2?'0'+p[0]:p[0];var day=p[1].length<2?'0'+p[1]:p[1];var y=p[2];if(y.length===2)y='20'+y;return y+'-'+m+'-'+day;}}catch(e){}return d;}
+function convertDate(d){
+    if(!d)return '';
+    d=d.trim();
+    // Already YYYY-MM-DD?
+    if(/^\d{4}-\d{2}-\d{2}$/.test(d))return d;
+    // Already YYYY-MM-DD but single digits?
+    if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(d)){var pp=d.split('-');return pp[0]+'-'+pp[1].padStart(2,'0')+'-'+pp[2].padStart(2,'0');}
+    // MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY
+    try{var p=d.split(/[\/\-\.]/);if(p.length===3){var m=p[0].padStart(2,'0');var day=p[1].padStart(2,'0');var y=p[2];if(y.length===2)y='20'+y;return y+'-'+m+'-'+day;}}catch(e){}
+    return d;
+}
 
 function displayResults(){
     var info=extractedData.eventInfo;
+    console.log('AI returned eventInfo:', JSON.stringify(info));
     if(info.date)document.getElementById('eventDate').value=info.date;
-    if(info.eventType)document.getElementById('eventType').value=info.eventType;
+    if(info.eventType){
+        var et=document.getElementById('eventType');
+        et.value=info.eventType;
+        // If exact match failed, try case-insensitive
+        if(!et.value && info.eventType){
+            for(var i=0;i<et.options.length;i++){
+                if(et.options[i].value.toLowerCase()===info.eventType.toLowerCase()){
+                    et.value=et.options[i].value;break;
+                }
+            }
+        }
+        console.log('Event type set to:', et.value, '(AI returned:', info.eventType, ')');
+    }
     if(info.hallName)document.getElementById('hallName').value=info.hallName;
     document.getElementById('eventSize').value=info.eventSize||'';
     document.getElementById('eventOwner').value=info.eventOwner||'';
