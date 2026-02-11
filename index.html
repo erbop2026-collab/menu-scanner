@@ -1,12 +1,15 @@
 <!--
 ═══════════════════════════════════════════════════════════════
   MENU SCANNER — ATERES GOLDA
-  Version: 2.0.0
-  Last Updated: 2026-02-10
+  Version: 2.0.1
+  Last Updated: 2026-02-11
 ═══════════════════════════════════════════════════════════════
 
 CHANGELOG:
 ──────────
+v2.0.1 (2026-02-11) — New API Key
+  • Updated Claude API key (old one was invalid/expired)
+
 v2.0.0 (2026-02-10) — Claude Vision AI Integration
   • Replaced Tesseract.js OCR with Claude Vision API
   • Added Google Apps Script proxy for API calls
@@ -746,7 +749,7 @@ var FIREBASE_CONFIG = {
 };
 
 /* ═══ CLAUDE VISION ═══ */
-var CLAUDE_API_KEY = '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';
+var CLAUDE_API_KEY = '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';
 var CLAUDE_PROXY_URL = localStorage.getItem('claudeProxyUrl') || 'https://script.google.com/macros/s/AKfycby8Xpir_hZrfDz3bLtIi3zCx2bvRfzQfkYJAxLyLh-c4zCAR5t5LXBb0kEDmbP4cob6/exec';
 
 function initFirebase() {
