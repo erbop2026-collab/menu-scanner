@@ -7,10 +7,11 @@
 
 CHANGELOG:
 ──────────
-v2.0.2 (2026-02-11) — API Key moved to Proxy
+v2.0.2 (2026-02-11) — API Key moved to Proxy + Header Fix
   • API Key now hardcoded in Google Apps Script proxy (server-side)
   • More secure: key never sent from browser
-  • Fixes 401 encoding issue
+  • Greatly improved prompt for header table extraction (date, affair, party names)
+  • Increased image resolution to 1400px for better header readability
 
 v2.0.1 (2026-02-11) — API Key + Improved Prompt
   • Updated Claude API key (old one was invalid)
@@ -1681,10 +1682,10 @@ function scanMenu() {
     document.getElementById('progressFill').style.width = '10%';
     hideAlerts();
 
-    // Create canvas - max 1000px for reasonable payload size
+    // Create canvas - max 1400px for good header readability
     var scanCanvas = document.createElement('canvas');
     var scanCtx = scanCanvas.getContext('2d');
-    var maxW = 1000;
+    var maxW = 1400;
     var scale = Math.min(1, maxW / originalImage.width);
     scanCanvas.width = Math.round(originalImage.width * scale);
     scanCanvas.height = Math.round(originalImage.height * scale);
