@@ -1,0 +1,1926 @@
+<!--
+═══════════════════════════════════════════════════════════════
+  MENU SCANNER — ATERES GOLDA
+  Version: 2.1.0
+  Last Updated: 2026-02-11
+═══════════════════════════════════════════════════════════════
+
+CHANGELOG:
+──────────
+v2.1.0 (2026-02-11) — PWA + Improved Prompt
+  • Added PWA support: install as app on phone (Add to Home Screen)
+  • App icon, splash screen, standalone mode (no browser bar)
+  • Service worker for offline caching
+  • Stronger JSON-only prompt (fixes "Looking at" text response)
+  • Proxy extracts JSON even if AI adds text before it
+  • Increased image resolution to 1400px
+  • Added Kiddush to event type dropdowns
+
+v2.0.2 (2026-02-11) — API Key moved to Proxy + Header Fix
+  • API Key now hardcoded in Google Apps Script proxy (server-side)
+  • More secure: key never sent from browser
+  • Greatly improved prompt for header table extraction (date, affair, party names)
+  • Increased image resolution to 1400px for better header readability
+
+v2.0.1 (2026-02-11) — API Key + Improved Prompt
+  • Updated Claude API key (old one was invalid)
+  • Improved AI prompt: better header table extraction (date, affair, party names)
+  • Added Kiddush to event type dropdowns
+
+v2.0.0 (2026-02-10) — Claude Vision AI Integration
+  • Replaced Tesseract.js OCR with Claude Vision API
+  • Added Google Apps Script proxy for API calls
+  • AI reads menu text, checkmarks, X marks, quantities automatically
+  • Auto-filters non-food items (decorations, tablecloths, etc.)
+  • Category headers shown in results (FRIDAY NIGHT, KIDDISH, MEN, LADIES)
+  • API Key + Proxy URL hardcoded in code
+  • Reduced image size to 1000px max for faster uploads
+
+v1.9.0 (2026-02-10) — 5-Tab Data Center
+  • Replaced History modal with 5-tab Data Center
+  • Tab 1: Dashboard (stats, top 10 wasted, by type/hall, monthly trends)
+  • Tab 2: Current Inventory (remained items from recent events)
+  • Tab 3: Events Summary (searchable/filterable table)
+  • Tab 4: Event Details (expandable per-event breakdown)
+  • Tab 5: Raw Data (all rows, searchable)
+  • Excel export now creates 5 matching sheets
+  • Renamed "History" to "📊 Reports & Data"
+
+v1.8.0 (2026-02-10) — UI Improvements
+  • Added prominent "📊 Reports & Data" + "📥 Excel" action bar
+  • Moved scan button above image preview
+  • Added sticky green save bar at top of results
+  • Scan button auto-scrolls into view after file select
+
+v1.7.0 (2026-02-10) — Firebase Migration
+  • Replaced Google Sheets with Firebase Firestore
+  • Cloud sync between all devices
+  • Offline mode with auto-sync
+  • PIN authentication (default: 1234)
+  • 24-hour session persistence
+  • Event history with search/filter
+  • Delete events from detail view
+  • Hardcoded Firebase config (auto-connects)
+
+v1.6.0 — Highlight Detection (Tesseract era)
+  • Yellow highlight = Remained
+  • Red/Purple highlight = Finished
+  • Paper-relative color calibration
+  • (Removed in v2.0.0)
+
+HARDCODED CONFIG:
+  • Firebase: apiKey, projectId, appId (line ~690)
+  • Claude API Key: NOW IN PROXY SCRIPT (server-side, more secure)
+  • Claude Proxy URL: https://script.google.com/macros/s/... (line ~691)
+  • Default PIN: 1234
+
+BACKUP FILES:
+  • index-backup-v1.9.0.html (before Claude Vision)
+  • index-backup-v2.0.0.html (Claude Vision initial)
+  • index-backup-v2.0.2.html (API key fix)
+  • index-backup-v2.1.0.html (PWA + improved prompt)
+
+═══════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Menu Scanner">
+    <meta name="theme-color" content="#1a3a2a">
+    <meta name="description" content="Menu Scanner for Ateres Golda - Scan event menus and track food waste">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Menu Scanner — Ateres Golda</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f0eb;
+            --card: #ffffff;
+            --primary: #1a3a2a;
+            --primary-light: #2d5f42;
+            --accent: #c8956c;
+            --accent-light: #e8c9a8;
+            --accent-hover: #b07a52;
+            --text: #2c2c2c;
+            --text-muted: #7a7a7a;
+            --border: #e2ddd7;
+            --success: #3a7d4f;
+            --success-bg: #e8f5ec;
+            --error: #c0392b;
+            --error-bg: #fdf0ee;
+            --remained-bg: #fdf8e8;
+            --finished: #3a7d4f;
+            --finished-bg: #e8f5ec;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+        .top-bar {
+            background: var(--primary);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-bar-brand { display: flex; align-items: center; gap: 12px; }
+        .top-bar-logo {
+            width: 36px; height: 36px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: white;
+            font-family: 'Playfair Display', serif; font-weight: 700;
+        }
+        .top-bar h1 { font-family: 'Playfair Display', serif; font-size: 20px; color: white; font-weight: 600; }
+        .top-bar-subtitle { font-size: 11px; color: var(--accent-light); letter-spacing: 1.5px; text-transform: uppercase; }
+        .top-bar-actions { display: flex; gap: 8px; align-items: center; }
+        .icon-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 10px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: white; font-size: 13px; font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            text-decoration: none; cursor: pointer;
+            transition: background 0.2s; white-space: nowrap;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.22); }
+        .icon-btn.round { padding: 8px 12px; }
+        .container { max-width: 640px; margin: 0 auto; padding: 20px 16px 100px; }
+        .alert {
+            padding: 14px 18px; border-radius: var(--radius-sm);
+            margin-bottom: 16px; font-size: 14px; font-weight: 500;
+            display: none; animation: slideDown 0.3s ease;
+        }
+        .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #b8dcc2; }
+        .alert-error { background: var(--error-bg); color: var(--error); border: 1px solid #f0c6c0; }
+        @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        .card {
+            background: var(--card); border-radius: var(--radius);
+            padding: 24px; margin-bottom: 16px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+        }
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px; font-weight: 600; color: var(--primary); margin-bottom: 18px;
+        }
+        .upload-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .upload-btn {
+            display: block; padding: 28px 16px;
+            background: var(--bg); border: 2px dashed var(--border);
+            border-radius: var(--radius); cursor: pointer;
+            transition: all 0.25s; text-align: center;
+        }
+        .upload-btn:hover { border-color: var(--accent); background: #faf6f2; }
+        .upload-btn:active { transform: scale(0.98); }
+        .upload-btn-icon { font-size: 32px; margin-bottom: 8px; display: block; pointer-events: none; }
+        .upload-btn-label { font-weight: 600; font-size: 14px; color: var(--primary); pointer-events: none; }
+        .upload-btn-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; pointer-events: none; }
+        .preview-section { display: none; margin-top: 16px; }
+        .preview-section.show { display: block; }
+        .preview-wrapper {
+            border-radius: var(--radius);
+            overflow: hidden; background: #f0ece7; border: 1px solid var(--border);
+        }
+        .preview-wrapper canvas { width: 100%; display: block; }
+        .preview-file-name {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; background: var(--bg);
+            border-radius: var(--radius-sm); margin-top: 10px;
+            font-size: 13px; color: var(--text-muted);
+        }
+        .align-tools { display: none; margin-top: 12px; padding: 14px; background: #faf8f5; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+        .align-tools.show { display: block; }
+        .align-tools-title { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 10px; }
+        .align-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .align-row label { font-size: 12px; color: var(--text-muted); width: 70px; flex-shrink: 0; }
+        .align-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+        .align-row .align-val { font-size: 12px; font-weight: 600; width: 40px; text-align: right; color: var(--primary); }
+        .align-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .align-btns button {
+            flex: 1; padding: 8px; font-size: 12px; font-weight: 600;
+            border-radius: var(--radius-sm); border: 1px solid var(--border);
+            cursor: pointer; font-family: 'DM Sans', sans-serif;
+        }
+        .btn-auto { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-reset { background: white; color: var(--text); }
+        .btn-primary {
+            display: block; width: 100%; padding: 16px;
+            background: var(--accent); color: white; border: none;
+            border-radius: var(--radius); font-size: 15px; font-weight: 700;
+            font-family: 'DM Sans', sans-serif; cursor: pointer;
+            margin-top: 16px; text-align: center; text-decoration: none;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-green { background: var(--success); }
+        .btn-green:hover { background: #2e6b40; }
+        .btn-blue { background: #2c5f8a; }
+        .btn-blue:hover { background: #1e4a6e; }
+        .loading-section { display: none; text-align: center; padding: 40px 20px; }
+        .loading-section.show { display: block; }
+        .loader {
+            width: 48px; height: 48px;
+            border: 3px solid var(--border); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 15px; font-weight: 500; margin-bottom: 16px; }
+        .progress-track { width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; border-radius: 3px; transition: width 0.3s; }
+        .progress-label { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+        .results-section { display: none; }
+        .results-section.show { display: block; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+        .form-input {
+            width: 100%; padding: 11px 14px;
+            border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 14px; font-family: 'DM Sans', sans-serif;
+            color: var(--text); background: white;
+        }
+        .form-input:focus { outline: none; border-color: var(--accent); }
+        .menu-items-header { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 14px; }
+        .menu-items-header h3 { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--primary); }
+        .items-count { font-size: 12px; background: var(--accent-light); color: var(--accent-hover); padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+        .category-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
+        .category-divider::before, .category-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .category-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; }
+        .menu-item { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+        .menu-item-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .dish-name { font-weight: 600; font-size: 15px; color: var(--primary); flex: 1; }
+        .status-tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; }
+        .status-tag.remained { background: var(--remained-bg); color: #8b6914; }
+        .status-tag.finished { background: var(--finished-bg); color: var(--finished); }
+        .status-tag.unknown { background: var(--bg); color: var(--text-muted); }
+        .menu-item-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .mini-label { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; font-weight: 500; }
+        .mini-input { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; }
+        .mini-input:focus { outline: none; border-color: var(--accent); }
+        .mini-select { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: white; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; }
+        .modal-overlay.show { display: block; }
+        .modal { background: var(--card); max-width: 560px; margin: 60px auto 40px; border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; }
+        .modal-header { background: var(--primary); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h2 { font-family: 'Playfair Display', serif; color: white; font-size: 18px; }
+        .modal-close { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .modal-body { padding: 24px; }
+        .modal-info { padding: 14px; background: #f0f7ff; border-radius: var(--radius-sm); border-left: 3px solid #4a90d9; margin-bottom: 20px; font-size: 13px; color: #3a6fa0; line-height: 1.5; }
+        .ignore-items { display: flex; flex-direction: column; gap: 6px; }
+        .ignore-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg); border-radius: var(--radius-sm); font-size: 14px; }
+        .ignore-item button { padding: 5px 14px; background: var(--error); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .add-ignore-row { display: flex; gap: 8px; margin-top: 16px; }
+        .add-ignore-row input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans', sans-serif; }
+        .add-ignore-row button { padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .btn-reset-modal { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; font-family: 'DM Sans', sans-serif; }
+        @media (max-width: 480px) {
+            .container { padding: 12px 10px 100px; }
+            .card { padding: 18px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .upload-actions { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+            .upload-btn { padding: 20px 8px; }
+            .upload-btn-icon { font-size: 26px; }
+            .upload-btn-label { font-size: 12px; }
+            .upload-btn-hint { font-size: 10px; }
+            .tabs { gap: 0; }
+            .tab { padding: 8px 10px; font-size: 11px; }
+            .data-table { font-size: 11px; }
+            .data-table th, .data-table td { padding: 5px 6px; }
+        }
+        /* PIN Login Screen */
+        .pin-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, var(--primary) 0%, #1a4a32 100%);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .pin-screen.hidden { display: none; }
+        .pin-box {
+            background: white; border-radius: 20px; padding: 40px 36px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
+            max-width: 360px; width: 90%;
+        }
+        .pin-box-logo {
+            width: 64px; height: 64px; background: var(--accent);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: white; font-family: 'Playfair Display', serif;
+            font-weight: 700; margin: 0 auto 20px;
+        }
+        .pin-box h2 { font-family: 'Playfair Display', serif; color: var(--primary); margin-bottom: 6px; font-size: 22px; }
+        .pin-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+        .pin-input {
+            width: 100%; padding: 16px; font-size: 24px; text-align: center;
+            border: 2px solid var(--border); border-radius: 12px;
+            font-family: 'DM Sans', sans-serif; letter-spacing: 12px;
+            color: var(--primary); font-weight: 700;
+        }
+        .pin-input:focus { outline: none; border-color: var(--accent); }
+        .pin-input.error { border-color: var(--error); animation: shake 0.4s ease; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        .pin-btn {
+            width: 100%; padding: 16px; margin-top: 16px;
+            background: var(--accent); color: white; border: none;
+            border-radius: 12px; font-size: 16px; font-weight: 700;
+            font-family: 'DM Sans', sans-serif; cursor: pointer;
+        }
+        .pin-btn:hover { background: var(--accent-hover); }
+        .pin-error-msg { color: var(--error); font-size: 13px; margin-top: 12px; display: none; font-weight: 600; }
+        .main-app { display: none; }
+        /* Tabs */
+        .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tab {
+            padding: 10px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+            color: var(--text-muted); border-bottom: 2px solid transparent;
+            margin-bottom: -2px; white-space: nowrap; font-family: 'DM Sans', sans-serif;
+            background: none; border-top: none; border-left: none; border-right: none;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }
+        .stat-card { background: var(--bg); padding: 12px; border-radius: 10px; text-align: center; }
+        .stat-card.warn { background: var(--remained-bg); }
+        .stat-card.good { background: var(--finished-bg); }
+        .stat-card.accent { background: #f0e6ff; }
+        .stat-val { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-table th { background: var(--primary); color: white; padding: 8px 10px; text-align: left; font-weight: 600; position: sticky; top: 0; }
+        .data-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+        .data-table tr:hover td { background: #f9f7f4; }
+        .rank-badge { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: white; text-align: center; line-height: 22px; font-size: 11px; font-weight: 700; }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: white; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+        .inv-dish { font-weight: 600; font-size: 14px; color: var(--primary); }
+        .inv-meta { font-size: 12px; color: var(--text-muted); }
+        .inv-amount { font-size: 18px; font-weight: 700; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<!-- PIN Login Screen -->
+<div class="pin-screen" id="pinScreen">
+    <div class="pin-box">
+        <div class="pin-box-logo">AG</div>
+        <h2>Menu Scanner</h2>
+        <p>Enter PIN to access</p>
+        <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="••••" inputmode="numeric" pattern="[0-9]*" onkeypress="if(event.key==='Enter')checkPin()">
+        <button type="button" class="pin-btn" onclick="checkPin()">🔓 Enter</button>
+        <div class="pin-error-msg" id="pinError">Incorrect PIN</div>
+    </div>
+</div>
+
+<!-- Main App (hidden until PIN verified) -->
+<div class="main-app" id="mainApp">
+
+<div class="top-bar">
+    <div class="top-bar-brand">
+        <div class="top-bar-logo">AG</div>
+        <div>
+            <h1>Menu Scanner</h1>
+            <div class="top-bar-subtitle">Ateres Golda</div>
+        </div>
+    </div>
+    <div class="top-bar-actions">
+        <button type="button" class="icon-btn round" onclick="openSettings()">⚙</button>
+    </div>
+</div>
+<div id="offlineBanner" style="display:none;background:#ff9800;color:white;text-align:center;padding:6px;font-size:12px;font-weight:600;">⚡ Offline Mode — data saved locally, will sync when connected</div>
+
+<!-- Main Action Bar -->
+<div style="max-width:640px;margin:12px auto 0;padding:0 16px;display:flex;gap:10px" id="actionBar">
+    <button type="button" onclick="openHistory()" style="flex:1;padding:14px;background:var(--primary);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-md)">
+        📊 Reports & Data
+    </button>
+    <button type="button" onclick="exportToExcel()" style="padding:14px 20px;background:var(--accent);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-md)">
+        📥 Excel
+    </button>
+</div>
+
+<div class="container">
+    <div class="alert alert-success" id="alertSuccess"></div>
+    <div class="alert alert-error" id="alertError"></div>
+
+    <div class="card" id="uploadCard">
+        <div class="card-title">Scan Menu</div>
+        <div class="upload-actions">
+            <label class="upload-btn">
+                <span class="upload-btn-icon">📸</span>
+                <div class="upload-btn-label">Take Photo</div>
+                <div class="upload-btn-hint">Use camera</div>
+                <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this.files[0])">
+            </label>
+            <label class="upload-btn">
+                <span class="upload-btn-icon">🖼️</span>
+                <div class="upload-btn-label">Upload Image</div>
+                <div class="upload-btn-hint">From gallery</div>
+                <input type="file" accept="image/*" style="display:none" onchange="handleFile(this.files[0])">
+            </label>
+            <div class="upload-btn" onclick="openGoogleDrivePicker()">
+                <span class="upload-btn-icon">📁</span>
+                <div class="upload-btn-label">Google Drive</div>
+                <div class="upload-btn-hint">Select from Drive</div>
+            </div>
+        </div>
+
+        <!-- Scan button + hint ABOVE the preview -->
+        <button type="button" class="btn-primary" id="scanButton" style="display:none;margin-top:16px;font-size:17px;padding:18px" onclick="scanMenu()">🧠 Scan with AI</button>
+        <p id="scanHint" style="display:none;text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">Claude AI will read the menu, detect ✅/❌ marks, and extract all items automatically</p>
+
+        <div class="preview-section" id="previewSection">
+            <div class="preview-file-name">
+                <span>📎</span>
+                <span id="fileName">No file selected</span>
+            </div>
+            <div class="preview-wrapper">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+            <div class="align-tools" id="alignTools">
+                <div class="align-tools-title">📐 Image Alignment</div>
+                <div class="align-row">
+                    <label>Rotation</label>
+                    <input type="range" id="rotationSlider" min="-15" max="15" value="0" step="0.5" oninput="drawPreview()">
+                    <span class="align-val" id="rotationVal">0°</span>
+                </div>
+                <div class="align-row">
+                    <label>Brightness</label>
+                    <input type="range" id="brightnessSlider" min="70" max="150" value="100" step="5" oninput="drawPreview()">
+                    <span class="align-val" id="brightnessVal">100%</span>
+                </div>
+                <div class="align-row">
+                    <label>Contrast</label>
+                    <input type="range" id="contrastSlider" min="70" max="200" value="100" step="5" oninput="drawPreview()">
+                    <span class="align-val" id="contrastVal">100%</span>
+                </div>
+                <div class="align-btns">
+                    <button type="button" class="btn-auto" onclick="autoAlign()">✨ Auto Enhance</button>
+                    <button type="button" class="btn-reset" onclick="resetTransform()">↺ Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-section" id="loadingSection">
+        <div class="card">
+            <div class="loader"></div>
+            <div class="loading-text" id="loadingText">Scanning menu...</div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-label" id="progressLabel">Initializing OCR...</div>
+        </div>
+    </div>
+
+    <div class="results-section" id="resultsSection">
+        <!-- Sticky save bar at top -->
+        <div style="position:sticky;top:56px;z-index:50;background:var(--success);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md)">
+            <div style="color:white;font-weight:600;font-size:14px">📋 Ready to save?</div>
+            <button type="button" onclick="saveEvent()" style="padding:10px 24px;background:white;color:var(--success);border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">✅ Save Event</button>
+        </div>
+        <div class="card">
+            <div class="card-title">Event Details</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-input" id="eventDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Event Type</label>
+                    <select class="form-input" id="eventType">
+                        <option value="">Select type...</option>
+                        <option value="Wedding">Wedding</option>
+                        <option value="Bar Mitzvah">Bar Mitzvah</option>
+                        <option value="Sheva Brachot">Sheva Brachot</option>
+                        <option value="Vort">Vort</option>
+                        <option value="Shabbat">Shabbat</option>
+                        <option value="Aufruf">Aufruf</option>
+                        <option value="Kiddush">Kiddush</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hall</label>
+                    <select class="form-input" id="hallName">
+                        <option value="">Select hall...</option>
+                        <option value="Ateres Golda">Ateres Golda</option>
+                        <option value="Scharf">Scharf</option>
+                        <option value="LH">LH</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hall Side (Split)</label>
+                    <select class="form-input" id="hallSide">
+                        <option value="">Full Hall</option>
+                        <option value="Side A">Side A</option>
+                        <option value="Side B">Side B</option>
+                        <option value="North">North</option>
+                        <option value="South">South</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Guests</label>
+                    <input type="text" class="form-input" id="eventSize" placeholder="e.g., 25-30">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Party Name</label>
+                    <input type="text" class="form-input" id="eventOwner" placeholder="Client name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Start Time</label>
+                    <select class="form-input" id="startTime">
+                        <option value="">Select...</option>
+                        <option value="FN">FN (Friday Night)</option>
+                        <option value="SN">SN (Saturday Night)</option>
+                        <option value="SD">SD (Saturday Day)</option>
+                        <option value="Evening">Evening</option>
+                        <option value="Afternoon">Afternoon</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-input" id="eventPhone" placeholder="Customer phone">
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="menu-items-header">
+                <h3>Menu Items</h3>
+                <span class="items-count" id="itemsCount">0 items</span>
+            </div>
+            <div id="menuItemsList"></div>
+            <button type="button" class="btn-primary btn-green" onclick="saveEvent()">✅ Save Event</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal" onclick="if(event.target===this)closeHistory()">
+    <div class="modal" style="max-width:720px">
+        <div class="modal-header">
+            <h2>📊 Reports & Data</h2>
+            <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="modal-close" style="width:auto;padding:6px 14px;font-size:13px;border-radius:6px;font-family:'DM Sans',sans-serif" onclick="exportToExcel()">📥 Excel</button>
+                <button type="button" class="modal-close" onclick="closeHistory()">✕</button>
+            </div>
+        </div>
+        <div class="modal-body" style="padding:12px">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+                <button class="tab" onclick="switchTab('inventory',this)">📦 Inventory</button>
+                <button class="tab" onclick="switchTab('events',this)">📅 Events</button>
+                <button class="tab" onclick="switchTab('details',this)">🔍 Details</button>
+                <button class="tab" onclick="switchTab('rawdata',this)">🗄️ Raw Data</button>
+            </div>
+
+            <!-- TAB 1: Dashboard -->
+            <div class="tab-content active" id="tab-dashboard">
+                <div id="dashStats" class="stat-grid"></div>
+                <h4 style="color:var(--primary);margin:16px 0 8px;font-family:'Playfair Display',serif">🔴 Top 10 Most Wasted Dishes</h4>
+                <div id="dashTopWasted" style="max-height:280px;overflow-y:auto"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+                    <div>
+                        <h4 style="color:var(--primary);margin-bottom:8px;font-family:'Playfair Display',serif;font-size:14px">📈 By Event Type</h4>
+                        <div id="dashByType"></div>
+                    </div>
+                    <div>
+                        <h4 style="color:var(--primary);margin-bottom:8px;font-family:'Playfair Display',serif;font-size:14px">🏛️ By Hall</h4>
+                        <div id="dashByHall"></div>
+                    </div>
+                </div>
+                <h4 style="color:var(--primary);margin:16px 0 8px;font-family:'Playfair Display',serif">📅 Monthly Trends</h4>
+                <div id="dashMonthly" style="max-height:220px;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 2: Current Inventory -->
+            <div class="tab-content" id="tab-inventory">
+                <div class="modal-info" style="margin-bottom:12px">📦 Items that <strong>remained</strong> from the most recent events — actionable info for today's decisions.</div>
+                <div id="invStats" class="stat-grid"></div>
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                    <select class="form-input" id="invDays" onchange="renderInventory()" style="width:auto">
+                        <option value="3">Last 3 days</option>
+                        <option value="7" selected>Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                </div>
+                <div id="invList" style="max-height:50vh;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 3: Events Summary -->
+            <div class="tab-content" id="tab-events">
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                    <input type="text" class="form-input" id="evtSearch" placeholder="Search by name, hall..." oninput="renderEventsSummary()" style="flex:1">
+                    <select class="form-input" id="evtFilter" onchange="renderEventsSummary()" style="width:auto">
+                        <option value="">All Types</option>
+                        <option value="Wedding">Wedding</option>
+                        <option value="Bar Mitzvah">Bar Mitzvah</option>
+                        <option value="Sheva Brachot">Sheva Brachot</option>
+                        <option value="Vort">Vort</option>
+                        <option value="Shabbat">Shabbat</option>
+                        <option value="Aufruf">Aufruf</option>
+                        <option value="Kiddush">Kiddush</option>
+                    </select>
+                </div>
+                <div id="evtList" style="max-height:55vh;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 4: Event Details -->
+            <div class="tab-content" id="tab-details">
+                <div class="modal-info" style="margin-bottom:12px">🔍 Select an event from the <strong>Events Summary</strong> tab to see full details, or browse below.</div>
+                <div id="detailsList" style="max-height:60vh;overflow-y:auto"></div>
+            </div>
+
+            <!-- TAB 5: Raw Data -->
+            <div class="tab-content" id="tab-rawdata">
+                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                    <input type="text" class="form-input" id="rawSearch" placeholder="Search dishes..." oninput="renderRawData()" style="flex:1">
+                    <span id="rawCount" style="font-size:12px;color:var(--text-muted);white-space:nowrap"></span>
+                </div>
+                <div id="rawList" style="max-height:55vh;overflow-y:auto"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Settings</h2>
+            <button type="button" class="modal-close" onclick="closeSettings()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🧠 Claude Vision (AI Scanner)</div>
+                <div class="modal-info">Powers the menu scanning. API key is built into the app. Only Proxy URL needs setup once.</div>
+                <div id="claudeStatus" style="padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;background:#fff3e0;color:#e65100">⏳ Not configured</div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Anthropic API Key</label>
+                    <input type="password" class="form-input" id="claudeApiKey" placeholder="sk-ant-api03-..." disabled style="background:#f5f0eb">
+                    <p style="font-size:11px;color:var(--success);margin-top:4px;font-weight:600">✅ Built into app</p>
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Vision Proxy URL</label>
+                    <input type="url" class="form-input" id="claudeProxyUrl" placeholder="https://script.google.com/macros/s/.../exec">
+                    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Deploy the proxy script in Google Apps Script and paste the URL here</p>
+                </div>
+                <button type="button" class="btn-reset-modal" style="background:var(--success)" onclick="saveClaudeConfig()">💾 Save Proxy URL</button>
+            </div>
+
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🔒 Security</div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Current PIN</label>
+                    <input type="password" class="form-input" id="currentPin" placeholder="••••" inputmode="numeric" maxlength="6">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">New PIN</label>
+                    <input type="password" class="form-input" id="newPin" placeholder="New PIN (min 4 digits)" inputmode="numeric" maxlength="6">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Confirm New PIN</label>
+                    <input type="password" class="form-input" id="confirmPin" placeholder="Confirm new PIN" inputmode="numeric" maxlength="6">
+                </div>
+                <button type="button" class="btn-reset-modal" style="background:var(--accent)" onclick="changePin()">🔑 Change PIN</button>
+                <button type="button" class="btn-reset-modal" style="background:var(--error);margin-top:8px" onclick="logout()">🚪 Logout</button>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Default PIN: 1234 — change it now!</p>
+            </div>
+
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🔥 Firebase Setup</div>
+                <div class="modal-info">Connect to Firebase for cloud sync between devices. Create a free project at <a href="https://console.firebase.google.com" target="_blank" style="color:#2c5f8a">Firebase Console →</a></div>
+                <div id="firebaseStatus" style="padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;background:#e8f5ec;color:#3a7d4f">⏳ Not connected</div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">API Key</label>
+                    <input type="text" class="form-input" id="fbApiKey" placeholder="AIzaSy...">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">Project ID</label>
+                    <input type="text" class="form-input" id="fbProjectId" placeholder="my-project-12345">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">App ID</label>
+                    <input type="text" class="form-input" id="fbAppId" placeholder="1:123456:web:abc123">
+                </div>
+                <button type="button" class="btn-reset-modal" style="background:var(--success)" onclick="saveFirebaseConfig()">💾 Save & Connect</button>
+            </div>
+
+            <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">🚫 Ignore List</div>
+                <div class="modal-info">Items on this list are filtered out during text-based scanning. (Less important now with highlight detection.)</div>
+                <div class="ignore-items" id="ignoreListContainer"></div>
+                <div class="add-ignore-row">
+                    <input type="text" id="newIgnoreItem" placeholder="Add item to ignore..." onkeypress="if(event.key==='Enter')addIgnoreItem()">
+                    <button type="button" onclick="addIgnoreItem()">+ Add</button>
+                </div>
+                <button type="button" class="btn-reset-modal" onclick="resetIgnoreList()">↺ Reset to Defaults</button>
+            </div>
+
+            <div>
+                <div class="align-tools-title" style="font-size:15px;margin-bottom:12px">📁 Google Drive Setup</div>
+                <div class="modal-info">To enable Google Drive picker, you need a Google Cloud project with Picker API enabled. <a href="https://console.cloud.google.com" target="_blank" style="color:#2c5f8a">Open Google Console →</a></div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">API Key</label>
+                    <input type="text" class="form-input" id="cfgApiKey" placeholder="AIzaSy..." oninput="saveGoogleConfig()">
+                </div>
+                <div style="margin-bottom:10px">
+                    <label class="form-label">OAuth Client ID</label>
+                    <input type="text" class="form-input" id="cfgClientId" placeholder="xxxx.apps.googleusercontent.com" oninput="saveGoogleConfig()">
+                </div>
+                <div>
+                    <label class="form-label">App ID (Project Number)</label>
+                    <input type="text" class="form-input" id="cfgAppId" placeholder="123456789" oninput="saveGoogleConfig()">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- end main-app -->
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+var extractedData = null;
+var imageFile = null;
+var originalImage = null;
+var db = null; // Firestore reference
+var currentDetailEventId = null; // for detail modal
+
+/* ═══ FIREBASE ═══ */
+var FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyCSaIMmLjUIdxWVFjjDTlcWIyQBfnpKWYw',
+    projectId: 'depreciation-recording',
+    appId: '1:480755533717:web:a5c7f7d71b17453ffa189c'
+};
+
+/* ═══ CLAUDE VISION ═══ */
+var CLAUDE_API_KEY = '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';
+var CLAUDE_PROXY_URL = localStorage.getItem('claudeProxyUrl') || 'https://script.google.com/macros/s/AKfycby8Xpir_hZrfDz3bLtIi3zCx2bvRfzQfkYJAxLyLh-c4zCAR5t5LXBb0kEDmbP4cob6/exec';
+
+function initFirebase() {
+    // Allow override from localStorage (settings), fallback to hardcoded
+    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || 'null') || FIREBASE_CONFIG;
+    if (!cfg || !cfg.apiKey || !cfg.projectId) {
+        updateFirebaseStatus(false);
+        return;
+    }
+    try {
+        if (firebase.apps.length) firebase.app().delete().then(function() { doInit(cfg); });
+        else doInit(cfg);
+    } catch(e) { doInit(cfg); }
+}
+function doInit(cfg) {
+    try {
+        firebase.initializeApp({
+            apiKey: cfg.apiKey,
+            projectId: cfg.projectId,
+            appId: cfg.appId || 'placeholder'
+        });
+        db = firebase.firestore();
+        db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+            console.log('Persistence error:', err.code);
+        });
+        // Test connection
+        db.collection('events').limit(1).get().then(function() {
+            updateFirebaseStatus(true);
+        }).catch(function() {
+            updateFirebaseStatus(true); // may be offline but persistence works
+        });
+    } catch(e) {
+        console.error('Firebase init error:', e);
+        updateFirebaseStatus(false);
+    }
+}
+function updateFirebaseStatus(connected) {
+    var el = document.getElementById('firebaseStatus');
+    if (!el) return;
+    if (connected) {
+        el.textContent = '✅ Connected';
+        el.style.background = '#e8f5ec'; el.style.color = '#3a7d4f';
+    } else {
+        el.textContent = '❌ Not connected — configure in Settings';
+        el.style.background = '#fdf0ee'; el.style.color = '#c0392b';
+    }
+}
+function saveFirebaseConfig() {
+    var cfg = {
+        apiKey: document.getElementById('fbApiKey').value.trim(),
+        projectId: document.getElementById('fbProjectId').value.trim(),
+        appId: document.getElementById('fbAppId').value.trim()
+    };
+    localStorage.setItem('firebaseConfig', JSON.stringify(cfg));
+    // Re-initialize
+    if (firebase.apps.length) {
+        firebase.app().delete().then(function() { db = null; initFirebase(); });
+    } else {
+        initFirebase();
+    }
+}
+function loadFirebaseConfig() {
+    var cfg = JSON.parse(localStorage.getItem('firebaseConfig') || 'null') || FIREBASE_CONFIG;
+    var el1 = document.getElementById('fbApiKey');
+    var el2 = document.getElementById('fbProjectId');
+    var el3 = document.getElementById('fbAppId');
+    if (el1) el1.value = cfg.apiKey || '';
+    if (el2) el2.value = cfg.projectId || '';
+    if (el3) el3.value = cfg.appId || '';
+}
+
+/* ═══ SAVE EVENT ═══ */
+function saveEvent() {
+    hideAlerts();
+    if (!db) { showAlert('error', 'Firebase not connected. Go to Settings → Firebase Setup.'); return; }
+
+    var hallName = document.getElementById('hallName').value;
+    var hallSide = document.getElementById('hallSide').value;
+    var fullHall = hallSide ? hallName + ' - ' + hallSide : hallName;
+
+    var items = extractedData.menuItems.map(function(item, idx) {
+        return {
+            dishName: item.dishName,
+            status: document.getElementById('status_' + idx).value,
+            amountRemained: document.getElementById('amount_' + idx).value || '',
+            reason: document.getElementById('reason_' + idx).value || '',
+            notes: document.getElementById('notes_' + idx).value || ''
+        };
+    });
+
+    var eventDoc = {
+        date: document.getElementById('eventDate').value,
+        eventType: document.getElementById('eventType').value,
+        hallName: fullHall,
+        eventSize: document.getElementById('eventSize').value,
+        eventOwner: document.getElementById('eventOwner').value,
+        startTime: document.getElementById('startTime').value,
+        phone: document.getElementById('eventPhone').value,
+        items: items,
+        itemCount: items.length,
+        remainedCount: items.filter(function(i) { return i.status === 'Remained'; }).length,
+        finishedCount: items.filter(function(i) { return i.status === 'Finished'; }).length,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    db.collection('events').add(eventDoc).then(function(docRef) {
+        showAlert('success', '✅ Saved! ' + items.length + ' items (' + eventDoc.remainedCount + ' remained, ' + eventDoc.finishedCount + ' finished)');
+        setTimeout(function() { location.reload(); }, 2500);
+    }).catch(function(err) {
+        console.error('Save error:', err);
+        showAlert('error', 'Save failed: ' + err.message);
+    });
+}
+
+/* ═══ HISTORY / DATA CENTER ═══ */
+var allEvents = []; // cached from Firebase
+
+function openHistory() {
+    document.getElementById('historyModal').classList.add('show');
+    loadAllEvents();
+}
+function closeHistory() { document.getElementById('historyModal').classList.remove('show'); }
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+    // Render tab content
+    if (tabId === 'dashboard') renderDashboard();
+    if (tabId === 'inventory') renderInventory();
+    if (tabId === 'events') renderEventsSummary();
+    if (tabId === 'details') renderDetails();
+    if (tabId === 'rawdata') renderRawData();
+}
+
+function loadAllEvents() {
+    if (!db) {
+        document.getElementById('tab-dashboard').innerHTML = '<p style="text-align:center;color:#999;padding:20px">Firebase not connected. Go to Settings → Firebase Setup.</p>';
+        return;
+    }
+    db.collection('events').orderBy('date', 'desc').get().then(function(snapshot) {
+        allEvents = [];
+        snapshot.forEach(function(doc) { allEvents.push(Object.assign({ id: doc.id }, doc.data())); });
+        renderDashboard();
+    }).catch(function(err) {
+        document.getElementById('dashStats').innerHTML = '<p style="color:var(--error)">Error: ' + err.message + '</p>';
+    });
+}
+
+/* ═══ TAB 1: DASHBOARD ═══ */
+function renderDashboard() {
+    if (!allEvents.length) {
+        document.getElementById('dashStats').innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;padding:20px">No events yet.</p>';
+        return;
+    }
+
+    var totalEvents = allEvents.length;
+    var totalItems = 0, totalRemained = 0, totalFinished = 0;
+    var dishWaste = {}, typeStats = {}, hallStats = {}, monthStats = {};
+
+    allEvents.forEach(function(ev) {
+        var remained = ev.remainedCount || 0;
+        var finished = ev.finishedCount || 0;
+        totalRemained += remained;
+        totalFinished += finished;
+        totalItems += (ev.itemCount || 0);
+
+        // By type
+        var t = ev.eventType || 'Other';
+        if (!typeStats[t]) typeStats[t] = { count: 0, remained: 0, items: 0 };
+        typeStats[t].count++;
+        typeStats[t].remained += remained;
+        typeStats[t].items += (ev.itemCount || 0);
+
+        // By hall
+        var h = ev.hallName || 'Unknown';
+        if (!hallStats[h]) hallStats[h] = { count: 0, remained: 0, items: 0 };
+        hallStats[h].count++;
+        hallStats[h].remained += remained;
+        hallStats[h].items += (ev.itemCount || 0);
+
+        // By month
+        var m = (ev.date || '').substring(0, 7); // YYYY-MM
+        if (m) {
+            if (!monthStats[m]) monthStats[m] = { count: 0, remained: 0, items: 0 };
+            monthStats[m].count++;
+            monthStats[m].remained += remained;
+            monthStats[m].items += (ev.itemCount || 0);
+        }
+
+        // Per dish
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                var dn = item.dishName || 'Unknown';
+                if (!dishWaste[dn]) dishWaste[dn] = { count: 0, totalAmt: 0 };
+                dishWaste[dn].count++;
+                dishWaste[dn].totalAmt += parseInt(item.amountRemained) || 0;
+            }
+        });
+    });
+
+    var wastePct = totalItems > 0 ? Math.round((totalRemained / totalItems) * 100) : 0;
+
+    // Stats cards
+    document.getElementById('dashStats').innerHTML =
+        '<div class="stat-card"><div class="stat-val">' + totalEvents + '</div><div class="stat-label">Total Events</div></div>' +
+        '<div class="stat-card"><div class="stat-val">' + totalItems + '</div><div class="stat-label">Total Items</div></div>' +
+        '<div class="stat-card warn"><div class="stat-val">' + totalRemained + '</div><div class="stat-label">Remained</div></div>' +
+        '<div class="stat-card good"><div class="stat-val">' + totalFinished + '</div><div class="stat-label">Finished</div></div>' +
+        '<div class="stat-card accent"><div class="stat-val">' + wastePct + '%</div><div class="stat-label">Waste Rate</div></div>';
+
+    // Top 10 wasted dishes
+    var dishArr = Object.keys(dishWaste).map(function(d) {
+        return { name: d, count: dishWaste[d].count, total: dishWaste[d].totalAmt, avg: dishWaste[d].count > 0 ? Math.round(dishWaste[d].totalAmt / dishWaste[d].count) : 0 };
+    }).sort(function(a, b) { return b.total - a.total; }).slice(0, 10);
+
+    var topHtml = '<table class="data-table"><thead><tr><th>#</th><th>Dish</th><th>Times</th><th>Total Qty</th><th>Avg/Event</th></tr></thead><tbody>';
+    dishArr.forEach(function(d, i) {
+        topHtml += '<tr><td><span class="rank-badge">' + (i + 1) + '</span></td><td style="font-weight:600">' + esc(d.name) + '</td><td>' + d.count + '</td><td style="color:var(--error);font-weight:700">' + d.total + '</td><td>' + d.avg + '</td></tr>';
+    });
+    topHtml += '</tbody></table>';
+    if (!dishArr.length) topHtml = '<p style="color:#999;text-align:center;padding:16px">No waste data yet.</p>';
+    document.getElementById('dashTopWasted').innerHTML = topHtml;
+
+    // By event type
+    var typeHtml = '';
+    Object.keys(typeStats).sort().forEach(function(t) {
+        var s = typeStats[t];
+        var pct = s.items > 0 ? Math.round((s.remained / s.items) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        typeHtml += '<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:12px">' +
+            '<span style="font-weight:600">' + esc(t) + '</span>' +
+            '<span>' + s.count + ' events · <strong style="color:' + pctColor + '">' + pct + '%</strong></span></div>';
+    });
+    document.getElementById('dashByType').innerHTML = typeHtml || '<p style="color:#999;font-size:12px">No data</p>';
+
+    // By hall
+    var hallHtml = '';
+    Object.keys(hallStats).sort().forEach(function(h) {
+        var s = hallStats[h];
+        var pct = s.items > 0 ? Math.round((s.remained / s.items) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        hallHtml += '<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:12px">' +
+            '<span style="font-weight:600">' + esc(h) + '</span>' +
+            '<span>' + s.count + ' events · <strong style="color:' + pctColor + '">' + pct + '%</strong></span></div>';
+    });
+    document.getElementById('dashByHall').innerHTML = hallHtml || '<p style="color:#999;font-size:12px">No data</p>';
+
+    // Monthly trends
+    var months = Object.keys(monthStats).sort();
+    var monthHtml = '<table class="data-table"><thead><tr><th>Month</th><th>Events</th><th>Remained</th><th>Waste %</th><th>Trend</th></tr></thead><tbody>';
+    months.forEach(function(m, i) {
+        var s = monthStats[m];
+        var pct = s.items > 0 ? Math.round((s.remained / s.items) * 100) : 0;
+        var prevPct = i > 0 ? (function() { var ps = monthStats[months[i - 1]]; return ps.items > 0 ? Math.round((ps.remained / ps.items) * 100) : 0; })() : pct;
+        var trend = i === 0 ? '—' : pct > prevPct ? '📈 ↑' : pct < prevPct ? '📉 ↓' : '→';
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        monthHtml += '<tr><td style="font-weight:600">' + m + '</td><td>' + s.count + '</td><td>' + s.remained + '</td><td style="color:' + pctColor + ';font-weight:700">' + pct + '%</td><td>' + trend + '</td></tr>';
+    });
+    monthHtml += '</tbody></table>';
+    if (!months.length) monthHtml = '<p style="color:#999;text-align:center;padding:16px">No data yet.</p>';
+    document.getElementById('dashMonthly').innerHTML = monthHtml;
+}
+
+/* ═══ TAB 2: CURRENT INVENTORY ═══ */
+function renderInventory() {
+    var days = parseInt(document.getElementById('invDays').value) || 7;
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    var cutoffStr = cutoff.toISOString().split('T')[0];
+
+    var recentEvents = allEvents.filter(function(ev) { return (ev.date || '') >= cutoffStr; });
+    var remainedItems = [];
+    var totalQty = 0;
+
+    recentEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                var qty = parseInt(item.amountRemained) || 0;
+                totalQty += qty;
+                remainedItems.push({
+                    dish: item.dishName,
+                    qty: qty,
+                    event: ev.eventOwner || 'Unknown',
+                    date: ev.date || '',
+                    hall: ev.hallName || '',
+                    reason: item.reason || '',
+                    notes: item.notes || ''
+                });
+            }
+        });
+    });
+
+    // Group by dish
+    var grouped = {};
+    remainedItems.forEach(function(item) {
+        var key = item.dish;
+        if (!grouped[key]) grouped[key] = { totalQty: 0, events: [] };
+        grouped[key].totalQty += item.qty;
+        grouped[key].events.push(item);
+    });
+
+    document.getElementById('invStats').innerHTML =
+        '<div class="stat-card"><div class="stat-val">' + recentEvents.length + '</div><div class="stat-label">Recent Events</div></div>' +
+        '<div class="stat-card warn"><div class="stat-val">' + remainedItems.length + '</div><div class="stat-label">Items Remained</div></div>' +
+        '<div class="stat-card accent"><div class="stat-val">' + totalQty + '</div><div class="stat-label">Total Qty Left</div></div>';
+
+    if (!remainedItems.length) {
+        document.getElementById('invList').innerHTML = '<p style="text-align:center;color:var(--success);padding:20px">🎉 No leftover items in the last ' + days + ' days!</p>';
+        return;
+    }
+
+    var sortedDishes = Object.keys(grouped).sort(function(a, b) { return grouped[b].totalQty - grouped[a].totalQty; });
+    var html = '';
+    sortedDishes.forEach(function(dish) {
+        var g = grouped[dish];
+        var sources = g.events.map(function(e) { return esc(e.event) + ' (' + e.date + ')'; }).join(', ');
+        html += '<div class="inv-item">' +
+            '<div><div class="inv-dish">' + esc(dish) + '</div>' +
+            '<div class="inv-meta">From: ' + sources + '</div>' +
+            (g.events[0].reason ? '<div class="inv-meta" style="color:var(--accent)">Reason: ' + esc(g.events[0].reason) + '</div>' : '') +
+            '</div>' +
+            '<div class="inv-amount">' + g.totalQty + '</div></div>';
+    });
+    document.getElementById('invList').innerHTML = html;
+}
+
+/* ═══ TAB 3: EVENTS SUMMARY ═══ */
+function renderEventsSummary() {
+    var search = (document.getElementById('evtSearch').value || '').toLowerCase();
+    var filter = document.getElementById('evtFilter').value;
+
+    var events = allEvents.slice();
+    if (filter) events = events.filter(function(e) { return e.eventType === filter; });
+    if (search) events = events.filter(function(e) {
+        return (e.eventOwner || '').toLowerCase().includes(search) ||
+               (e.hallName || '').toLowerCase().includes(search) ||
+               (e.date || '').includes(search);
+    });
+
+    if (!events.length) {
+        document.getElementById('evtList').innerHTML = '<p style="text-align:center;color:#999;padding:20px">No events found.</p>';
+        return;
+    }
+
+    var html = '<table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Hall</th><th>Client</th><th>Guests</th><th>Items</th><th>Rem.</th><th>Fin.</th><th>Waste%</th></tr></thead><tbody>';
+    events.forEach(function(ev) {
+        var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        html += '<tr style="cursor:pointer" onclick="showDetailInline(\'' + ev.id + '\')">' +
+            '<td style="white-space:nowrap">' + esc(ev.date) + '</td>' +
+            '<td>' + esc(ev.eventType) + '</td>' +
+            '<td>' + esc(ev.hallName) + '</td>' +
+            '<td style="font-weight:600">' + esc(ev.eventOwner) + '</td>' +
+            '<td>' + esc(ev.eventSize) + '</td>' +
+            '<td>' + (ev.itemCount || 0) + '</td>' +
+            '<td style="color:var(--error);font-weight:600">' + (ev.remainedCount || 0) + '</td>' +
+            '<td style="color:var(--success)">' + (ev.finishedCount || 0) + '</td>' +
+            '<td style="color:' + pctColor + ';font-weight:700">' + pct + '%</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('evtList').innerHTML = html;
+}
+
+function showDetailInline(eventId) {
+    // Switch to details tab and show that event
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab')[3].classList.add('active');
+    document.getElementById('tab-details').classList.add('active');
+    renderSingleDetail(eventId);
+}
+
+/* ═══ TAB 4: EVENT DETAILS ═══ */
+function renderDetails() {
+    if (!allEvents.length) {
+        document.getElementById('detailsList').innerHTML = '<p style="text-align:center;color:#999;padding:20px">No events yet.</p>';
+        return;
+    }
+    // Show list of all events, expandable
+    var html = '';
+    allEvents.forEach(function(ev) {
+        var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) : 0;
+        var pctColor = pct > 50 ? 'var(--error)' : pct > 25 ? '#e67e22' : 'var(--success)';
+        html += '<div style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden">' +
+            '<div onclick="toggleDetail(this)" style="padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:white">' +
+            '<div><strong style="color:var(--primary)">' + esc(ev.eventOwner || 'Unknown') + '</strong>' +
+            '<span style="font-size:12px;color:var(--text-muted);margin-left:8px">' + esc(ev.date) + ' · ' + esc(ev.eventType) + ' · ' + esc(ev.hallName) + '</span></div>' +
+            '<span style="font-size:12px;font-weight:700;color:' + pctColor + '">' + pct + '% ▾</span></div>' +
+            '<div class="detail-expand" style="display:none;padding:12px 14px;background:var(--bg);border-top:1px solid var(--border)">';
+
+        (ev.items || []).forEach(function(item) {
+            var sc = item.status === 'Remained' ? 'remained' : item.status === 'Finished' ? 'finished' : 'unknown';
+            var bg = sc === 'remained' ? 'var(--remained-bg)' : sc === 'finished' ? 'var(--finished-bg)' : 'white';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:6px;margin-bottom:4px;background:' + bg + '">' +
+                '<span style="font-weight:600;font-size:13px">' + esc(item.dishName) + '</span>' +
+                '<div style="display:flex;align-items:center;gap:8px">' +
+                (item.amountRemained ? '<strong style="color:var(--accent)">' + esc(item.amountRemained) + '</strong>' : '') +
+                '<span class="status-tag ' + sc + '" style="font-size:10px">' + item.status + '</span></div></div>';
+        });
+
+        // Delete button
+        html += '<button type="button" onclick="deleteEventFromList(\'' + ev.id + '\')" style="margin-top:8px;padding:6px 14px;background:var(--error);color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑️ Delete Event</button>';
+        html += '</div></div>';
+    });
+    document.getElementById('detailsList').innerHTML = html;
+}
+
+function renderSingleDetail(eventId) {
+    var ev = allEvents.find(function(e) { return e.id === eventId; });
+    if (!ev) { renderDetails(); return; }
+
+    var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) : 0;
+    var html = '<div style="padding:14px;background:white;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Client:</strong> ' + esc(ev.eventOwner) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Date:</strong> ' + esc(ev.date) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Type:</strong> ' + esc(ev.eventType) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Hall:</strong> ' + esc(ev.hallName) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Guests:</strong> ' + esc(ev.eventSize) + '</div>' +
+        '<div style="padding:8px;background:var(--bg);border-radius:8px;font-size:13px"><strong>Waste:</strong> ' + pct + '%</div></div>';
+
+    (ev.items || []).forEach(function(item) {
+        var sc = item.status === 'Remained' ? 'remained' : item.status === 'Finished' ? 'finished' : 'unknown';
+        var bg = sc === 'remained' ? 'var(--remained-bg)' : sc === 'finished' ? 'var(--finished-bg)' : 'white';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:6px;margin-bottom:4px;background:' + bg + '">' +
+            '<div><span style="font-weight:600;font-size:13px">' + esc(item.dishName) + '</span>' +
+            (item.reason ? '<div style="font-size:11px;color:var(--text-muted)">Reason: ' + esc(item.reason) + '</div>' : '') +
+            (item.notes ? '<div style="font-size:11px;color:var(--text-muted)">Notes: ' + esc(item.notes) + '</div>' : '') +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px">' +
+            (item.amountRemained ? '<strong style="color:var(--accent)">' + esc(item.amountRemained) + '</strong>' : '') +
+            '<span class="status-tag ' + sc + '" style="font-size:10px">' + item.status + '</span></div></div>';
+    });
+
+    html += '<div style="margin-top:12px"><button type="button" onclick="renderDetails()" style="padding:8px 16px;background:var(--primary);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">← Back to all events</button>' +
+        ' <button type="button" onclick="deleteEventFromList(\'' + ev.id + '\')" style="padding:8px 16px;background:var(--error);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑️ Delete</button></div></div>';
+
+    document.getElementById('detailsList').innerHTML = html;
+}
+
+function toggleDetail(el) {
+    var expand = el.nextElementSibling;
+    expand.style.display = expand.style.display === 'none' ? 'block' : 'none';
+}
+
+function deleteEventFromList(eventId) {
+    if (!confirm('Delete this event permanently?')) return;
+    if (!db) return;
+    db.collection('events').doc(eventId).delete().then(function() {
+        allEvents = allEvents.filter(function(e) { return e.id !== eventId; });
+        renderDetails();
+        renderDashboard();
+        showAlert('success', 'Event deleted.');
+    }).catch(function(err) { showAlert('error', 'Delete failed: ' + err.message); });
+}
+
+/* ═══ TAB 5: RAW DATA ═══ */
+function renderRawData() {
+    var search = (document.getElementById('rawSearch').value || '').toLowerCase();
+    var rows = [];
+
+    allEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            rows.push({
+                date: ev.date || '',
+                eventType: ev.eventType || '',
+                hallName: ev.hallName || '',
+                eventOwner: ev.eventOwner || '',
+                eventSize: ev.eventSize || '',
+                dishName: item.dishName || '',
+                status: item.status || '',
+                amountRemained: item.amountRemained || '',
+                reason: item.reason || '',
+                notes: item.notes || ''
+            });
+        });
+    });
+
+    if (search) {
+        rows = rows.filter(function(r) {
+            return r.dishName.toLowerCase().includes(search) ||
+                   r.eventOwner.toLowerCase().includes(search) ||
+                   r.hallName.toLowerCase().includes(search) ||
+                   r.reason.toLowerCase().includes(search);
+        });
+    }
+
+    document.getElementById('rawCount').textContent = rows.length + ' rows';
+
+    if (!rows.length) {
+        document.getElementById('rawList').innerHTML = '<p style="text-align:center;color:#999;padding:20px">No data found.</p>';
+        return;
+    }
+
+    var html = '<table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Hall</th><th>Client</th><th>Dish</th><th>Status</th><th>Qty</th><th>Reason</th></tr></thead><tbody>';
+    rows.forEach(function(r) {
+        var sc = r.status === 'Remained' ? 'color:var(--error);font-weight:600' : r.status === 'Finished' ? 'color:var(--success)' : '';
+        html += '<tr><td style="white-space:nowrap;font-size:11px">' + esc(r.date) + '</td>' +
+            '<td style="font-size:11px">' + esc(r.eventType) + '</td>' +
+            '<td style="font-size:11px">' + esc(r.hallName) + '</td>' +
+            '<td style="font-size:11px;font-weight:600">' + esc(r.eventOwner) + '</td>' +
+            '<td style="font-weight:600">' + esc(r.dishName) + '</td>' +
+            '<td style="' + sc + '">' + r.status + '</td>' +
+            '<td style="font-weight:700;color:var(--accent)">' + esc(r.amountRemained) + '</td>' +
+            '<td style="font-size:11px">' + esc(r.reason) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('rawList').innerHTML = html;
+}
+
+/* ═══ EXPORT TO EXCEL (5 SHEETS) ═══ */
+function exportToExcel() {
+    if (!allEvents.length) { showAlert('error', 'No events to export.'); return; }
+
+    // Sheet 1: Dashboard
+    var dishWaste = {}, typeStats = {}, hallStats = {}, monthStats = {};
+    var totalItems = 0, totalRemained = 0;
+    allEvents.forEach(function(ev) {
+        totalRemained += (ev.remainedCount || 0);
+        totalItems += (ev.itemCount || 0);
+        var t = ev.eventType || 'Other';
+        if (!typeStats[t]) typeStats[t] = { count: 0, remained: 0, items: 0 };
+        typeStats[t].count++; typeStats[t].remained += (ev.remainedCount || 0); typeStats[t].items += (ev.itemCount || 0);
+        var h = ev.hallName || 'Unknown';
+        if (!hallStats[h]) hallStats[h] = { count: 0, remained: 0, items: 0 };
+        hallStats[h].count++; hallStats[h].remained += (ev.remainedCount || 0); hallStats[h].items += (ev.itemCount || 0);
+        var m = (ev.date || '').substring(0, 7);
+        if (m) { if (!monthStats[m]) monthStats[m] = { count: 0, remained: 0, items: 0 }; monthStats[m].count++; monthStats[m].remained += (ev.remainedCount || 0); monthStats[m].items += (ev.itemCount || 0); }
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                var dn = item.dishName;
+                if (!dishWaste[dn]) dishWaste[dn] = { count: 0, totalAmt: 0 };
+                dishWaste[dn].count++; dishWaste[dn].totalAmt += parseInt(item.amountRemained) || 0;
+            }
+        });
+    });
+
+    var dashData = [['📊 DASHBOARD ANALYTICS'], [''], ['Total Events', allEvents.length], ['Total Items', totalItems], ['Total Remained', totalRemained], ['Waste Rate', totalItems > 0 ? Math.round((totalRemained / totalItems) * 100) + '%' : '0%'],
+        [''], ['TOP 10 MOST WASTED DISHES'], ['Dish', 'Times Remained', 'Total Qty Wasted', 'Avg/Event']];
+    Object.keys(dishWaste).map(function(d) { return { name: d, count: dishWaste[d].count, total: dishWaste[d].totalAmt }; })
+        .sort(function(a, b) { return b.total - a.total; }).slice(0, 10)
+        .forEach(function(d) { dashData.push([d.name, d.count, d.total, d.count > 0 ? Math.round(d.total / d.count) : 0]); });
+    dashData.push([''], ['WASTE BY EVENT TYPE'], ['Type', 'Events', 'Items Remained', 'Waste %']);
+    Object.keys(typeStats).forEach(function(t) { var s = typeStats[t]; dashData.push([t, s.count, s.remained, s.items > 0 ? Math.round((s.remained / s.items) * 100) + '%' : '0%']); });
+    dashData.push([''], ['WASTE BY HALL'], ['Hall', 'Events', 'Items Remained', 'Waste %']);
+    Object.keys(hallStats).forEach(function(h) { var s = hallStats[h]; dashData.push([h, s.count, s.remained, s.items > 0 ? Math.round((s.remained / s.items) * 100) + '%' : '0%']); });
+    dashData.push([''], ['MONTHLY TRENDS'], ['Month', 'Events', 'Remained', 'Waste %']);
+    Object.keys(monthStats).sort().forEach(function(m) { var s = monthStats[m]; dashData.push([m, s.count, s.remained, s.items > 0 ? Math.round((s.remained / s.items) * 100) + '%' : '0%']); });
+
+    // Sheet 2: Current Inventory
+    var invData = [['Dish', 'Total Qty', 'From Event', 'Date', 'Hall', 'Reason', 'Notes']];
+    var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+    var cutoffStr = cutoff.toISOString().split('T')[0];
+    allEvents.filter(function(ev) { return (ev.date || '') >= cutoffStr; }).forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            if (item.status === 'Remained') {
+                invData.push([item.dishName, item.amountRemained || '', ev.eventOwner || '', ev.date || '', ev.hallName || '', item.reason || '', item.notes || '']);
+            }
+        });
+    });
+
+    // Sheet 3: Events Summary
+    var evtData = [['Date', 'Event Type', 'Hall', 'Client', 'Guests', 'Start Time', 'Phone', 'Total Items', 'Remained', 'Finished', 'Waste %']];
+    allEvents.forEach(function(ev) {
+        var pct = ev.itemCount > 0 ? Math.round(((ev.remainedCount || 0) / ev.itemCount) * 100) + '%' : '0%';
+        evtData.push([ev.date, ev.eventType, ev.hallName, ev.eventOwner, ev.eventSize, ev.startTime || '', ev.phone || '', ev.itemCount || 0, ev.remainedCount || 0, ev.finishedCount || 0, pct]);
+    });
+
+    // Sheet 4: Event Details
+    var detData = [['Date', 'Client', 'Event Type', 'Hall', 'Guests', 'Dish', 'Status', 'Qty Remained', 'Reason', 'Notes']];
+    allEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            detData.push([ev.date, ev.eventOwner, ev.eventType, ev.hallName, ev.eventSize, item.dishName, item.status, item.amountRemained || '', item.reason || '', item.notes || '']);
+        });
+    });
+
+    // Sheet 5: Raw Menu Data
+    var rawData = [['Date', 'Event Type', 'Hall', 'Client', 'Guests', 'Start Time', 'Phone', 'Dish Name', 'Status', 'Amount Remained', 'Reason', 'Notes']];
+    allEvents.forEach(function(ev) {
+        (ev.items || []).forEach(function(item) {
+            rawData.push([ev.date, ev.eventType, ev.hallName, ev.eventOwner, ev.eventSize, ev.startTime || '', ev.phone || '', item.dishName, item.status, item.amountRemained || '', item.reason || '', item.notes || '']);
+        });
+    });
+
+    var wb = XLSX.utils.book_new();
+    var ws1 = XLSX.utils.aoa_to_sheet(dashData);
+    var ws2 = XLSX.utils.aoa_to_sheet(invData);
+    var ws3 = XLSX.utils.aoa_to_sheet(evtData);
+    var ws4 = XLSX.utils.aoa_to_sheet(detData);
+    var ws5 = XLSX.utils.aoa_to_sheet(rawData);
+
+    ws1['!cols'] = [{ wch: 30 }, { wch: 14 }, { wch: 16 }, { wch: 12 }];
+    ws2['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 20 }];
+    ws3['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+    ws4['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 10 }, { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 20 }];
+    ws5['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 30 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 20 }];
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'Dashboard');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Current Inventory');
+    XLSX.utils.book_append_sheet(wb, ws3, 'Events Summary');
+    XLSX.utils.book_append_sheet(wb, ws4, 'Event Details');
+    XLSX.utils.book_append_sheet(wb, ws5, 'Menu Data');
+
+    var fileName = 'Ateres_Golda_' + new Date().toISOString().split('T')[0] + '.xlsx';
+    XLSX.writeFile(wb, fileName);
+    showAlert('success', '📥 Exported ' + allEvents.length + ' events (5 sheets) → ' + fileName);
+}
+
+/* ═══ OFFLINE DETECTION ═══ */
+window.addEventListener('online', function() {
+    document.getElementById('offlineBanner').style.display = 'none';
+});
+window.addEventListener('offline', function() {
+    document.getElementById('offlineBanner').style.display = 'block';
+});
+if (!navigator.onLine) document.getElementById('offlineBanner').style.display = 'block';
+
+/* ═══ GOOGLE DRIVE PICKER ═══ */
+// To enable Google Drive picker:
+// 1. Go to https://console.cloud.google.com
+// 2. Create a project (or use existing)
+// 3. Enable "Google Picker API" and "Google Drive API"
+// 4. Create an API Key (APIs & Services > Credentials > Create > API Key)
+// 5. Create an OAuth 2.0 Client ID (Type: Web application, add your domain to Authorized JavaScript origins)
+// 6. Replace the values below:
+var GOOGLE_API_KEY = '';      // Your API Key here
+var GOOGLE_CLIENT_ID = '';    // Your OAuth Client ID here
+var GOOGLE_APP_ID = '';       // Your project number (from project settings)
+
+var pickerApiLoaded = false;
+var oauthToken = null;
+var tokenClient = null;
+
+function openGoogleDrivePicker() {
+    if (!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID) {
+        showAlert('error', 'Google Drive not configured. API Key & Client ID needed — see Settings.');
+        return;
+    }
+    gapi.load('picker', function() {
+        pickerApiLoaded = true;
+        if (!tokenClient) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/drive.readonly',
+                callback: function(response) {
+                    if (response.error) {
+                        showAlert('error', 'Google auth failed: ' + response.error);
+                        return;
+                    }
+                    oauthToken = response.access_token;
+                    createAndShowPicker();
+                }
+            });
+        }
+        if (!oauthToken) {
+            tokenClient.requestAccessToken({ prompt: '' });
+        } else {
+            createAndShowPicker();
+        }
+    });
+}
+
+function createAndShowPicker() {
+    if (!pickerApiLoaded || !oauthToken) return;
+    var view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES);
+    view.setMimeTypes('image/png,image/jpeg,image/gif,image/webp,image/bmp');
+    view.setIncludeFolders(true);
+
+    var picker = new google.picker.PickerBuilder()
+        .setTitle('Select Menu Image from Google Drive')
+        .addView(view)
+        .addView(new google.picker.DocsView(google.picker.ViewId.RECENTLY_PICKED))
+        .setOAuthToken(oauthToken)
+        .setDeveloperKey(GOOGLE_API_KEY)
+        .setAppId(GOOGLE_APP_ID)
+        .setCallback(pickerCallback)
+        .build();
+    picker.setVisible(true);
+}
+
+function pickerCallback(data) {
+    if (data.action === google.picker.Action.PICKED) {
+        var doc = data.docs[0];
+        var fileId = doc.id;
+        var fileName = doc.name;
+        showAlert('success', 'Loading "' + fileName + '" from Google Drive...');
+        
+        // Download the file via Drive API
+        fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
+            headers: { 'Authorization': 'Bearer ' + oauthToken }
+        })
+        .then(function(response) { return response.blob(); })
+        .then(function(blob) {
+            var file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+            handleFile(file);
+        })
+        .catch(function(err) {
+            console.error('Drive download error:', err);
+            showAlert('error', 'Failed to download file from Drive.');
+        });
+    }
+}
+
+var DEFAULT_IGNORE = [
+    'decor','tablecloth','linen','flowers','centerpiece',
+    'burgundy look','olive green look','laser cut','new green bird','burgundy liner',
+    'platters','cake platters','cut up cake','glasses','martini glasses',
+    'flute glasses','plates','napkins','utensils','on tables',
+    'friday night','men-','ladies-','kayx','some kids','people',
+    'sales tax','tax','indevidual'
+];
+var ignoreList = JSON.parse(localStorage.getItem('ignoreList2')) || DEFAULT_IGNORE.slice();
+
+/* ═══ PIN AUTHENTICATION ═══ */
+var APP_PIN_HASH_KEY = 'ag_pin_hash';
+var APP_SESSION_KEY = 'ag_session';
+var DEFAULT_PIN = '1234'; // Default PIN — user should change in Settings
+
+function hashPin(pin) {
+    // Simple hash for client-side PIN (not cryptographic, but sufficient for app lock)
+    var hash = 0;
+    var str = 'AG_SALT_' + pin + '_MENU';
+    for (var i = 0; i < str.length; i++) {
+        var chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+    }
+    return 'pin_' + Math.abs(hash).toString(36);
+}
+
+function checkPin() {
+    var input = document.getElementById('pinInput');
+    var pin = input.value.trim();
+    if (!pin) return;
+
+    var storedHash = localStorage.getItem(APP_PIN_HASH_KEY);
+    if (!storedHash) {
+        // First time — set default PIN hash
+        storedHash = hashPin(DEFAULT_PIN);
+        localStorage.setItem(APP_PIN_HASH_KEY, storedHash);
+    }
+
+    if (hashPin(pin) === storedHash) {
+        // PIN correct — sign in to Firebase Auth
+        unlockApp();
+    } else {
+        input.classList.add('error');
+        document.getElementById('pinError').style.display = 'block';
+        setTimeout(function() {
+            input.classList.remove('error');
+            document.getElementById('pinError').style.display = 'none';
+        }, 2000);
+        input.value = '';
+    }
+}
+
+function unlockApp() {
+    // Save session (valid for 24 hours)
+    localStorage.setItem(APP_SESSION_KEY, Date.now().toString());
+
+    // Sign in anonymously to Firebase
+    if (firebase.apps.length && firebase.auth) {
+        firebase.auth().signInAnonymously().catch(function(err) {
+            console.log('Anonymous auth error:', err);
+        });
+    }
+
+    document.getElementById('pinScreen').classList.add('hidden');
+    document.getElementById('mainApp').style.display = 'block';
+}
+
+function checkSession() {
+    var session = localStorage.getItem(APP_SESSION_KEY);
+    if (session) {
+        var elapsed = Date.now() - parseInt(session);
+        // Session valid for 24 hours
+        if (elapsed < 24 * 60 * 60 * 1000) {
+            unlockApp();
+            return;
+        }
+    }
+    // Show PIN screen
+    document.getElementById('pinScreen').classList.remove('hidden');
+    document.getElementById('mainApp').style.display = 'none';
+    setTimeout(function() { document.getElementById('pinInput').focus(); }, 300);
+}
+
+function changePin() {
+    var current = document.getElementById('currentPin').value.trim();
+    var newPin = document.getElementById('newPin').value.trim();
+    var confirmPin = document.getElementById('confirmPin').value.trim();
+
+    var storedHash = localStorage.getItem(APP_PIN_HASH_KEY) || hashPin(DEFAULT_PIN);
+
+    if (hashPin(current) !== storedHash) {
+        showAlert('error', 'Current PIN is incorrect.');
+        return;
+    }
+    if (newPin.length < 4) {
+        showAlert('error', 'PIN must be at least 4 digits.');
+        return;
+    }
+    if (newPin !== confirmPin) {
+        showAlert('error', 'New PINs do not match.');
+        return;
+    }
+
+    localStorage.setItem(APP_PIN_HASH_KEY, hashPin(newPin));
+    document.getElementById('currentPin').value = '';
+    document.getElementById('newPin').value = '';
+    document.getElementById('confirmPin').value = '';
+    showAlert('success', '✅ PIN changed successfully!');
+}
+
+function logout() {
+    localStorage.removeItem(APP_SESSION_KEY);
+    if (firebase.auth) firebase.auth().signOut();
+    document.getElementById('pinScreen').classList.remove('hidden');
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+    closeSettings();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('eventDate').valueAsDate = new Date();
+    var cfg=JSON.parse(localStorage.getItem('googleDriveConfig')||'{}');
+    if(cfg.apiKey)GOOGLE_API_KEY=cfg.apiKey;
+    if(cfg.clientId)GOOGLE_CLIENT_ID=cfg.clientId;
+    if(cfg.appId)GOOGLE_APP_ID=cfg.appId;
+    initFirebase();
+    checkSession();
+});
+
+function handleFile(file) {
+    if (!file) return;
+    imageFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+            originalImage = img;
+            drawPreview();
+            document.getElementById('previewSection').classList.add('show');
+            document.getElementById('alignTools').classList.add('show');
+            document.getElementById('scanButton').style.display = '';
+            document.getElementById('scanHint').style.display = '';
+            autoAlign();
+            // Scroll to make scan button visible
+            setTimeout(function() { document.getElementById('scanButton').scrollIntoView({behavior:'smooth', block:'center'}); }, 300);
+        };
+        img.onerror = function() { showAlert('error', 'Could not load image.'); };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() { showAlert('error', 'Could not read file.'); };
+    reader.readAsDataURL(file);
+}
+
+function drawPreview() {
+    if (!originalImage) return;
+    var canvas = document.getElementById('previewCanvas');
+    var ctx = canvas.getContext('2d');
+    var rotation = parseFloat(document.getElementById('rotationSlider').value) || 0;
+    var brightness = parseFloat(document.getElementById('brightnessSlider').value) || 100;
+    var contrast = parseFloat(document.getElementById('contrastSlider').value) || 100;
+    var scale = Math.min(1, 600 / originalImage.width);
+    var w = originalImage.width * scale;
+    var h = originalImage.height * scale;
+    var pad = 30;
+    canvas.width = w + pad * 2;
+    canvas.height = h + pad * 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f5f0eb';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.filter = 'brightness(' + brightness + '%) contrast(' + contrast + '%)';
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.drawImage(originalImage, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    ctx.filter = 'none';
+    document.getElementById('rotationVal').textContent = rotation + '\u00B0';
+    document.getElementById('brightnessVal').textContent = brightness + '%';
+    document.getElementById('contrastVal').textContent = contrast + '%';
+}
+
+function autoAlign() {
+    document.getElementById('brightnessSlider').value = 115;
+    document.getElementById('contrastSlider').value = 140;
+    document.getElementById('rotationSlider').value = 0;
+    drawPreview();
+}
+
+function resetTransform() {
+    document.getElementById('brightnessSlider').value = 100;
+    document.getElementById('contrastSlider').value = 100;
+    document.getElementById('rotationSlider').value = 0;
+    drawPreview();
+}
+
+function scanMenu() {
+    if (!originalImage) { showAlert('error', 'Select an image first.'); return; }
+
+    // Use hardcoded values, fallback to localStorage settings
+    var apiKey = CLAUDE_API_KEY || localStorage.getItem('claudeApiKey') || '';
+    var proxyUrl = CLAUDE_PROXY_URL || localStorage.getItem('claudeProxyUrl') || '';
+
+    if (!apiKey || !proxyUrl) {
+        showAlert('error', '⚙️ Claude Vision not configured. Set Proxy URL in Settings or update the code.');
+        return;
+    }
+
+    document.getElementById('uploadCard').style.display = 'none';
+    document.getElementById('actionBar').style.display = 'none';
+    document.getElementById('loadingSection').classList.add('show');
+    document.getElementById('progressLabel').textContent = 'Preparing image...';
+    document.getElementById('progressFill').style.width = '10%';
+    hideAlerts();
+
+    // Create canvas - max 1400px for good header readability
+    var scanCanvas = document.createElement('canvas');
+    var scanCtx = scanCanvas.getContext('2d');
+    var maxW = 1400;
+    var scale = Math.min(1, maxW / originalImage.width);
+    scanCanvas.width = Math.round(originalImage.width * scale);
+    scanCanvas.height = Math.round(originalImage.height * scale);
+
+    // Apply brightness/contrast settings for cleaner image
+    var brightness = parseFloat(document.getElementById('brightnessSlider').value) || 100;
+    var contrast = parseFloat(document.getElementById('contrastSlider').value) || 100;
+    var rotation = parseFloat(document.getElementById('rotationSlider').value) || 0;
+    scanCtx.filter = 'brightness(' + brightness + '%) contrast(' + contrast + '%)';
+    scanCtx.save();
+    scanCtx.translate(scanCanvas.width / 2, scanCanvas.height / 2);
+    scanCtx.rotate(rotation * Math.PI / 180);
+    scanCtx.drawImage(originalImage, -scanCanvas.width / 2, -scanCanvas.height / 2, scanCanvas.width, scanCanvas.height);
+    scanCtx.restore();
+    scanCtx.filter = 'none';
+
+    // Convert to base64 JPEG (compressed)
+    var base64 = scanCanvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+    var payloadSize = Math.round(base64.length / 1024);
+    console.log('Image payload size: ' + payloadSize + 'KB (' + scanCanvas.width + 'x' + scanCanvas.height + ')');
+
+    document.getElementById('progressFill').style.width = '30%';
+    document.getElementById('progressLabel').textContent = '🧠 Sending to Claude AI (' + payloadSize + 'KB)...';
+
+    var payload = JSON.stringify({
+        apiKey: apiKey,
+        image: base64,
+        mediaType: 'image/jpeg'
+    });
+
+    // Send to Google Apps Script proxy (no custom headers = no CORS preflight)
+    fetch(proxyUrl, {
+        method: 'POST',
+        redirect: 'follow',
+        body: payload
+    })
+    .then(function(response) {
+        console.log('Proxy response status:', response.status, response.type);
+        document.getElementById('progressFill').style.width = '70%';
+        document.getElementById('progressLabel').textContent = 'Processing AI response...';
+        return response.text();
+    })
+    .then(function(text) {
+        console.log('Proxy raw response:', text.substring(0, 500));
+        document.getElementById('progressFill').style.width = '90%';
+        var result;
+        try { result = JSON.parse(text); }
+        catch(e) { throw new Error('Invalid response from proxy: ' + text.substring(0, 200)); }
+
+        if (result.status === 'error') {
+            throw new Error(result.message || 'Unknown error');
+        }
+        if (!result.data || result.data.error) {
+            throw new Error((result.data && result.data.error) || 'AI returned invalid data');
+        }
+
+        var data = result.data;
+        console.log('Claude Vision result:', data);
+        console.log('Items detected:', data.menuItems ? data.menuItems.length : 0);
+        if (result.usage) console.log('Token usage:', result.usage);
+
+        // Format for displayResults
+        extractedData = {
+            eventInfo: {
+                date: convertDate(data.eventInfo.date || ''),
+                eventType: data.eventInfo.eventType || '',
+                hallName: data.eventInfo.hallName || '',
+                eventSize: data.eventInfo.eventSize || '',
+                eventOwner: data.eventInfo.eventOwner || '',
+                startTime: data.eventInfo.startTime || '',
+                phone: data.eventInfo.phone || ''
+            },
+            menuItems: (data.menuItems || []).map(function(item) {
+                return {
+                    dishName: item.dishName || '',
+                    status: item.status || 'Unknown',
+                    amountRemained: item.amountRemained || '',
+                    category: item.category || '',
+                    reason: '',
+                    notes: ''
+                };
+            })
+        };
+
+        document.getElementById('progressFill').style.width = '100%';
+        displayResults();
+        document.getElementById('actionBar').style.display = '';
+    })
+    .catch(function(err) {
+        console.error('Scan error:', err);
+        showAlert('error', 'AI Scan failed: ' + err.message);
+        document.getElementById('uploadCard').style.display = '';
+        document.getElementById('actionBar').style.display = '';
+    })
+    .finally(function() {
+        document.getElementById('loadingSection').classList.remove('show');
+    });
+}
+
+/* ═══ CLAUDE VISION CONFIG ═══ */
+function saveClaudeConfig() {
+    var proxyUrl = document.getElementById('claudeProxyUrl').value.trim();
+
+    if (!proxyUrl) { showAlert('error', 'Enter Proxy URL'); return; }
+
+    localStorage.setItem('claudeProxyUrl', proxyUrl);
+    CLAUDE_PROXY_URL = proxyUrl;
+    updateClaudeStatus(true);
+    showAlert('success', '🧠 Claude Vision configured! Ready to scan.');
+}
+
+function loadClaudeConfig() {
+    var apiKey = CLAUDE_API_KEY || localStorage.getItem('claudeApiKey') || '';
+    var proxyUrl = CLAUDE_PROXY_URL || localStorage.getItem('claudeProxyUrl') || '';
+    document.getElementById('claudeApiKey').value = apiKey ? '••••••••' + apiKey.slice(-8) : '';
+    document.getElementById('claudeProxyUrl').value = proxyUrl;
+    updateClaudeStatus(apiKey && proxyUrl);
+}
+
+function updateClaudeStatus(connected) {
+    var el = document.getElementById('claudeStatus');
+    if (connected) {
+        el.style.background = '#e8f5ec';
+        el.style.color = '#3a7d4f';
+        el.textContent = '✅ Claude Vision ready';
+    } else {
+        el.style.background = '#fff3e0';
+        el.style.color = '#e65100';
+        el.textContent = '⚠️ Not configured — add API Key + Proxy URL';
+    }
+}
+
+function convertDate(d){try{var p=d.split(/[\/\-\.]/);if(p.length===3){var m=p[0].length<2?'0'+p[0]:p[0];var day=p[1].length<2?'0'+p[1]:p[1];var y=p[2];if(y.length===2)y='20'+y;return y+'-'+m+'-'+day;}}catch(e){}return d;}
+
+function displayResults(){
+    var info=extractedData.eventInfo;
+    if(info.date)document.getElementById('eventDate').value=info.date;
+    if(info.eventType)document.getElementById('eventType').value=info.eventType;
+    if(info.hallName)document.getElementById('hallName').value=info.hallName;
+    document.getElementById('eventSize').value=info.eventSize||'';
+    document.getElementById('eventOwner').value=info.eventOwner||'';
+    if(info.startTime)document.getElementById('startTime').value=info.startTime;
+    document.getElementById('eventPhone').value=info.phone||'';
+
+    var list=document.getElementById('menuItemsList');list.innerHTML='';
+    var items=extractedData.menuItems;
+
+    var remainedCount=0, finishedCount=0, unknownCount=0;
+    for(var c=0;c<items.length;c++){
+        if(items[c].status==='Remained')remainedCount++;
+        else if(items[c].status==='Finished')finishedCount++;
+        else unknownCount++;
+    }
+    var countText = items.length+' item'+(items.length!==1?'s':'');
+    countText += ' (✅' + remainedCount + ' ❌' + finishedCount;
+    if (unknownCount > 0) countText += ' ❓' + unknownCount;
+    countText += ')';
+    document.getElementById('itemsCount').textContent = countText;
+
+    if(items.length===0){list.innerHTML='<p style="text-align:center;color:#999;padding:20px">No menu items detected.<br><small>Check that the image is clear and try again.</small></p>';}
+
+    var lastCategory = '';
+    for(var idx=0;idx<items.length;idx++){
+        var item=items[idx];
+
+        // Category header
+        if (item.category && item.category !== lastCategory) {
+            var catDiv = document.createElement('div');
+            catDiv.style.cssText = 'padding:8px 12px;background:var(--primary);color:white;border-radius:6px;margin:12px 0 6px;font-size:12px;font-weight:700;letter-spacing:0.5px';
+            catDiv.textContent = '📂 ' + item.category;
+            list.appendChild(catDiv);
+            lastCategory = item.category;
+        }
+
+        var sc=item.status==='Remained'?'remained':item.status==='Finished'?'finished':'unknown';
+        var div=document.createElement('div');div.className='menu-item';
+        div.innerHTML='<div class="menu-item-top"><span class="dish-name">'+esc(item.dishName)+'</span><span class="status-tag '+sc+'">'+item.status+'</span></div><div class="menu-item-fields"><div><div class="mini-label">Amount Remained</div><input class="mini-input" id="amount_'+idx+'" value="'+esc(item.amountRemained)+'" placeholder="e.g. 20"></div><div><div class="mini-label">Status</div><select class="mini-select" id="status_'+idx+'"><option value="Remained"'+(item.status==='Remained'?' selected':'')+'>Remained</option><option value="Finished"'+(item.status==='Finished'?' selected':'')+'>Finished</option></select></div><div><div class="mini-label">Reason</div><input class="mini-input" id="reason_'+idx+'" placeholder="Why remained?"></div><div><div class="mini-label">Notes</div><input class="mini-input" id="notes_'+idx+'" placeholder="Notes"></div></div>';
+        list.appendChild(div);
+    }
+    document.getElementById('resultsSection').classList.add('show');
+    document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+}
+
+function openSettings(){document.getElementById('settingsModal').classList.add('show');renderIgnore();loadGoogleConfig();loadFirebaseConfig();loadClaudeConfig();}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
+
+function saveGoogleConfig(){
+    var cfg={apiKey:document.getElementById('cfgApiKey').value.trim(),clientId:document.getElementById('cfgClientId').value.trim(),appId:document.getElementById('cfgAppId').value.trim()};
+    localStorage.setItem('googleDriveConfig',JSON.stringify(cfg));
+    GOOGLE_API_KEY=cfg.apiKey;GOOGLE_CLIENT_ID=cfg.clientId;GOOGLE_APP_ID=cfg.appId;
+    oauthToken=null;tokenClient=null;
+}
+function loadGoogleConfig(){
+    var cfg=JSON.parse(localStorage.getItem('googleDriveConfig')||'{}');
+    document.getElementById('cfgApiKey').value=cfg.apiKey||'';
+    document.getElementById('cfgClientId').value=cfg.clientId||'';
+    document.getElementById('cfgAppId').value=cfg.appId||'';
+    if(cfg.apiKey)GOOGLE_API_KEY=cfg.apiKey;
+    if(cfg.clientId)GOOGLE_CLIENT_ID=cfg.clientId;
+    if(cfg.appId)GOOGLE_APP_ID=cfg.appId;
+}
+function renderIgnore(){var c=document.getElementById('ignoreListContainer');if(!ignoreList.length){c.innerHTML='<p style="text-align:center;color:#999;padding:16px">Empty</p>';return;}c.innerHTML=ignoreList.map(function(item,i){return'<div class="ignore-item"><span>'+esc(item)+'</span><button type="button" onclick="removeIgnore('+i+')">Remove</button></div>';}).join('');}
+function addIgnoreItem(){var inp=document.getElementById('newIgnoreItem');var v=inp.value.trim().toLowerCase();if(!v)return;if(ignoreList.indexOf(v)>=0){showAlert('error','Already exists.');return;}ignoreList.push(v);localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();inp.value='';}
+function removeIgnore(i){ignoreList.splice(i,1);localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();}
+function resetIgnoreList(){if(!confirm('Reset to defaults?'))return;ignoreList=DEFAULT_IGNORE.slice();localStorage.setItem('ignoreList2',JSON.stringify(ignoreList));renderIgnore();}
+
+function showAlert(type,msg){hideAlerts();var el=type==='success'?document.getElementById('alertSuccess'):document.getElementById('alertError');el.textContent=msg;el.style.display='block';window.scrollTo({top:0,behavior:'smooth'});if(type==='success')setTimeout(function(){el.style.display='none'},5000);}
+function hideAlerts(){document.getElementById('alertSuccess').style.display='none';document.getElementById('alertError').style.display='none';}
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+// ═══ PWA SERVICE WORKER ═══
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+        console.log('SW registered:', reg.scope);
+    }).catch(function(err) {
+        console.log('SW registration failed:', err);
+    });
+}
+</script>
+</body>
+</html>
