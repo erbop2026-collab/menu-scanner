@@ -1,12 +1,21 @@
 <!--
 ═══════════════════════════════════════════════════════════════
   MENU SCANNER — ATERES GOLDA
-  Version: 2.0.2
+  Version: 2.1.0
   Last Updated: 2026-02-11
 ═══════════════════════════════════════════════════════════════
 
 CHANGELOG:
 ──────────
+v2.1.0 (2026-02-11) — PWA + Improved Prompt
+  • Added PWA support: install as app on phone (Add to Home Screen)
+  • App icon, splash screen, standalone mode (no browser bar)
+  • Service worker for offline caching
+  • Stronger JSON-only prompt (fixes "Looking at" text response)
+  • Proxy extracts JSON even if AI adds text before it
+  • Increased image resolution to 1400px
+  • Added Kiddush to event type dropdowns
+
 v2.0.2 (2026-02-11) — API Key moved to Proxy + Header Fix
   • API Key now hardcoded in Google Apps Script proxy (server-side)
   • More secure: key never sent from browser
@@ -67,7 +76,9 @@ HARDCODED CONFIG:
 
 BACKUP FILES:
   • index-backup-v1.9.0.html (before Claude Vision)
-  • index-backup-v2.0.0.html (current version)
+  • index-backup-v2.0.0.html (Claude Vision initial)
+  • index-backup-v2.0.2.html (API key fix)
+  • index-backup-v2.1.0.html (PWA + improved prompt)
 
 ═══════════════════════════════════════════════════════════════
 -->
@@ -78,6 +89,12 @@ BACKUP FILES:
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Menu Scanner">
+    <meta name="theme-color" content="#1a3a2a">
+    <meta name="description" content="Menu Scanner for Ateres Golda - Scan event menus and track food waste">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <title>Menu Scanner — Ateres Golda</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
@@ -1895,6 +1912,15 @@ function resetIgnoreList(){if(!confirm('Reset to defaults?'))return;ignoreList=D
 function showAlert(type,msg){hideAlerts();var el=type==='success'?document.getElementById('alertSuccess'):document.getElementById('alertError');el.textContent=msg;el.style.display='block';window.scrollTo({top:0,behavior:'smooth'});if(type==='success')setTimeout(function(){el.style.display='none'},5000);}
 function hideAlerts(){document.getElementById('alertSuccess').style.display='none';document.getElementById('alertError').style.display='none';}
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+// ═══ PWA SERVICE WORKER ═══
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+        console.log('SW registered:', reg.scope);
+    }).catch(function(err) {
+        console.log('SW registration failed:', err);
+    });
+}
 </script>
 </body>
 </html>
