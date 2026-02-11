@@ -1,3 +1,65 @@
+<!--
+═══════════════════════════════════════════════════════════════
+  MENU SCANNER — ATERES GOLDA
+  Version: 2.0.0
+  Last Updated: 2026-02-10
+═══════════════════════════════════════════════════════════════
+
+CHANGELOG:
+──────────
+v2.0.0 (2026-02-10) — Claude Vision AI Integration
+  • Replaced Tesseract.js OCR with Claude Vision API
+  • Added Google Apps Script proxy for API calls
+  • AI reads menu text, checkmarks, X marks, quantities automatically
+  • Auto-filters non-food items (decorations, tablecloths, etc.)
+  • Category headers shown in results (FRIDAY NIGHT, KIDDISH, MEN, LADIES)
+  • API Key + Proxy URL hardcoded in code
+  • Reduced image size to 1000px max for faster uploads
+
+v1.9.0 (2026-02-10) — 5-Tab Data Center
+  • Replaced History modal with 5-tab Data Center
+  • Tab 1: Dashboard (stats, top 10 wasted, by type/hall, monthly trends)
+  • Tab 2: Current Inventory (remained items from recent events)
+  • Tab 3: Events Summary (searchable/filterable table)
+  • Tab 4: Event Details (expandable per-event breakdown)
+  • Tab 5: Raw Data (all rows, searchable)
+  • Excel export now creates 5 matching sheets
+  • Renamed "History" to "📊 Reports & Data"
+
+v1.8.0 (2026-02-10) — UI Improvements
+  • Added prominent "📊 Reports & Data" + "📥 Excel" action bar
+  • Moved scan button above image preview
+  • Added sticky green save bar at top of results
+  • Scan button auto-scrolls into view after file select
+
+v1.7.0 (2026-02-10) — Firebase Migration
+  • Replaced Google Sheets with Firebase Firestore
+  • Cloud sync between all devices
+  • Offline mode with auto-sync
+  • PIN authentication (default: 1234)
+  • 24-hour session persistence
+  • Event history with search/filter
+  • Delete events from detail view
+  • Hardcoded Firebase config (auto-connects)
+
+v1.6.0 — Highlight Detection (Tesseract era)
+  • Yellow highlight = Remained
+  • Red/Purple highlight = Finished
+  • Paper-relative color calibration
+  • (Removed in v2.0.0)
+
+HARDCODED CONFIG:
+  • Firebase: apiKey, projectId, appId (line ~690)
+  • Claude API Key: sk-ant-api03-... (line ~690)
+  • Claude Proxy URL: https://script.google.com/macros/s/... (line ~691)
+  • Default PIN: 1234
+
+BACKUP FILES:
+  • index-backup-v1.9.0.html (before Claude Vision)
+  • index-backup-v2.0.0.html (current version)
+
+═══════════════════════════════════════════════════════════════
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1607,10 +1669,10 @@ function scanMenu() {
     document.getElementById('progressFill').style.width = '10%';
     hideAlerts();
 
-    // Create high-res canvas (max 1600px wide for good readability)
+    // Create canvas - max 1000px for reasonable payload size
     var scanCanvas = document.createElement('canvas');
     var scanCtx = scanCanvas.getContext('2d');
-    var maxW = 1600;
+    var maxW = 1000;
     var scale = Math.min(1, maxW / originalImage.width);
     scanCanvas.width = Math.round(originalImage.width * scale);
     scanCanvas.height = Math.round(originalImage.height * scale);
@@ -1627,33 +1689,38 @@ function scanMenu() {
     scanCtx.restore();
     scanCtx.filter = 'none';
 
-    // Convert to base64 JPEG (smaller than PNG)
-    var base64 = scanCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    // Convert to base64 JPEG (compressed)
+    var base64 = scanCanvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+    var payloadSize = Math.round(base64.length / 1024);
+    console.log('Image payload size: ' + payloadSize + 'KB (' + scanCanvas.width + 'x' + scanCanvas.height + ')');
 
     document.getElementById('progressFill').style.width = '30%';
-    document.getElementById('progressLabel').textContent = '🧠 Sending to Claude AI...';
+    document.getElementById('progressLabel').textContent = '🧠 Sending to Claude AI (' + payloadSize + 'KB)...';
 
-    // Send to proxy (text/plain avoids CORS preflight)
+    var payload = JSON.stringify({
+        apiKey: apiKey,
+        image: base64,
+        mediaType: 'image/jpeg'
+    });
+
+    // Send to Google Apps Script proxy (no custom headers = no CORS preflight)
     fetch(proxyUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
         redirect: 'follow',
-        body: JSON.stringify({
-            apiKey: apiKey,
-            image: base64,
-            mediaType: 'image/jpeg'
-        })
+        body: payload
     })
     .then(function(response) {
+        console.log('Proxy response status:', response.status, response.type);
         document.getElementById('progressFill').style.width = '70%';
         document.getElementById('progressLabel').textContent = 'Processing AI response...';
         return response.text();
     })
     .then(function(text) {
+        console.log('Proxy raw response:', text.substring(0, 500));
         document.getElementById('progressFill').style.width = '90%';
         var result;
         try { result = JSON.parse(text); }
-        catch(e) { throw new Error('Invalid response from proxy. Check deployment settings.'); }
+        catch(e) { throw new Error('Invalid response from proxy: ' + text.substring(0, 200)); }
 
         if (result.status === 'error') {
             throw new Error(result.message || 'Unknown error');
