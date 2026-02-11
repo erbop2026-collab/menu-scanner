@@ -7,8 +7,10 @@
 
 CHANGELOG:
 ──────────
-v2.0.1 (2026-02-11) — New API Key
-  • Updated Claude API key (old one was invalid/expired)
+v2.0.1 (2026-02-11) — API Key + Improved Prompt
+  • Updated Claude API key (old one was invalid)
+  • Improved AI prompt: better header table extraction (date, affair, party names)
+  • Added Kiddush to event type dropdowns
 
 v2.0.0 (2026-02-10) — Claude Vision AI Integration
   • Replaced Tesseract.js OCR with Claude Vision API
@@ -488,6 +490,7 @@ BACKUP FILES:
                         <option value="Vort">Vort</option>
                         <option value="Shabbat">Shabbat</option>
                         <option value="Aufruf">Aufruf</option>
+                        <option value="Kiddush">Kiddush</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
@@ -610,6 +613,7 @@ BACKUP FILES:
                         <option value="Vort">Vort</option>
                         <option value="Shabbat">Shabbat</option>
                         <option value="Aufruf">Aufruf</option>
+                        <option value="Kiddush">Kiddush</option>
                     </select>
                 </div>
                 <div id="evtList" style="max-height:55vh;overflow-y:auto"></div>
